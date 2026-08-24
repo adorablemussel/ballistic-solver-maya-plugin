@@ -9,8 +9,6 @@
 #include <string>
 #include <exception>
 
-#include "kernel.cuh"
-
 class TestCmd : public MPxCommand {
 public:
     TestCmd() {}

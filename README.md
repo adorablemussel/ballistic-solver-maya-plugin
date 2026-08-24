@@ -1,1 +1,1 @@
-# BallisticSolver
+# Ballistic Solver for Autodesk Maya as a plug-in

@@ -24,9 +24,7 @@ find_package(Maya REQUIRED)
 # definicja plików źródłowych i nagłówkowych pluginu
 add_library(${PROJECT_NAME} SHARED 
     src/pluginMain.cpp
-    src/kernel.cu
-    include/kernel.cuh
- "src/test-code/stackTest.cpp")
+)
 
 # zmiana rozszerzenia z domyślnego .dll na .mll
 set_target_properties(${PROJECT_NAME} PROPERTIES 
