@@ -23,8 +23,11 @@ find_package(Maya REQUIRED)
 
 # definicja plików źródłowych i nagłówkowych pluginu
 add_library(${PROJECT_NAME} SHARED 
-    src/pluginMain.cpp
-)
+    "src/main.cpp"
+    "src/HelloWorldCommand.cpp" 
+    "include/HelloWorldCommand.h"
+    "include/HelloWorldNode.h"
+    "src/HelloWorldNode.cpp" "src/HelloWorldDrawOverride.cpp" "include/HelloWorldDrawOverride.h")
 
 # zmiana rozszerzenia z domyślnego .dll na .mll
 set_target_properties(${PROJECT_NAME} PROPERTIES 
@@ -41,6 +44,8 @@ target_link_directories(${PROJECT_NAME} PRIVATE "${MAYA_DEVKIT_BASE}/lib")
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     Foundation.lib 
     OpenMaya.lib
+    OpenMayaRender.lib
+    OpenMayaUI.lib
 )
 
 # podłączenie Gmsh SDK
