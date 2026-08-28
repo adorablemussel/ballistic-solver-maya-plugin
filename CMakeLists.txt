@@ -24,7 +24,12 @@ set(CMAKE_CUDA_STANDARD 17)
 # definicje ścieżek
 set(THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third-party")
 set(MAYA_DEVKIT_BASE_DIR "${THIRD_PARTY_DIR}/MayaDevkitBase2026")
-set(GMSH_SDK_DIR "${THIRD_PARTY_DIR}/GmshSDK")
+set(MAYA_PLUGINS_DIR "C:/Users/Szymon/Documents/maya/2026/plug-ins")
+if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo" OR CMAKE_BUILD_TYPE STREQUAL "Release") # RelWithDebInfo i Release mają to samo ABI
+    set(GMSH_SDK_DIR "${THIRD_PARTY_DIR}/GmshSDK-Release")
+elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(GMSH_SDK_DIR "${THIRD_PARTY_DIR}/GmshSDK-Debug")
+endif ()
 
 ###################
 # ŚRODOWISKO MAYI #
@@ -89,7 +94,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 # nagłówki i biblioteki Gmsh
 target_include_directories(${PROJECT_NAME} PRIVATE "${GMSH_SDK_DIR}/include")
-target_link_libraries(${PROJECT_NAME} PRIVATE "${GMSH_SDK_DIR}/lib/msvc-x64/gmsh.dll.lib")
+target_link_libraries(${PROJECT_NAME} PRIVATE "${GMSH_SDK_DIR}/lib/gmsh.dll.lib")
 
 #################
 # AUTOMATYZACJA #
@@ -106,12 +111,22 @@ add_dependencies(${PROJECT_NAME} unload_plugin)
 
 # kopiowanie gmsh.dll i wczytanie ponownie pluginu w Mayi
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    # kopiowanie biblioteki Gmsh obok pluginu
+    # kopiowanie biblioteki Gmsh obok pluginu w lokalnym build folderze projektu
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${GMSH_SDK_DIR}/lib/msvc-x64/gmsh.dll"
+    "${GMSH_SDK_DIR}/lib/gmsh.dll"
     $<TARGET_FILE_DIR:${PROJECT_NAME}>
 
-    # załadowanie skompilowanej z powrotem wtyczki do Mayi
+    # kopiowanie pliku .mll do folderu z pluginami Mayi
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:${PROJECT_NAME}>
+    "${MAYA_PLUGINS_DIR}"
+
+    # kopiowanie biblioteki Gmsh obok pluginu w folderze z pluginami Mayi
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${GMSH_SDK_DIR}/lib/gmsh.dll"
+    "${MAYA_PLUGINS_DIR}"
+
+    # załadowanie z powrotem skompilowanej wtyczki do Mayi
     COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/dev/load_plugin_via_port.py"
     VERBATIM
 )

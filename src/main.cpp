@@ -16,6 +16,10 @@
 #include "MultiplyNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
+
+#ifdef _DEBUG
+    MGlobal::displayInfo("Initialized Plugin!");
+#endif
     const char* vendor = "Szymon Krzysztofik";
     const char* version = "1.0.0";
     const char* requiredApiVersion = "Any";
