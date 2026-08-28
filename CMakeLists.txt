@@ -44,12 +44,14 @@ set(SOURCE_FILES
     "src/HelloWorldCommand.cpp"
     "src/HelloWorldNode.cpp" 
     "src/HelloWorldDrawOverride.cpp"
+    "src/MultiplyNode.cpp"
 )
 
 set(HEADER_FILES
     "include/HelloWorldCommand.h"
     "include/HelloWorldNode.h"
     "include/HelloWorldDrawOverride.h"
+    "include/MultiplyNode.h"
 )
 
 ###############

@@ -13,6 +13,7 @@
 #include "HelloWorldCommand.h"
 #include "HelloWorldDrawOverride.h"
 #include "HelloWorldNode.h"
+#include "MultiplyNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
     const char* vendor = "Szymon Krzysztofik";
@@ -27,6 +28,8 @@ MStatus initializePlugin(MObject pluginObj) {
         return(status);
     }
 
+    // HELLO WORLD COMMAND
+
     status = pluginFn.registerCommand(
         HelloWorldCommand::CommandName(), 
         HelloWorldCommand::Creator);
@@ -34,6 +37,8 @@ MStatus initializePlugin(MObject pluginObj) {
         MGlobal::displayError("Failed to register HelloWorldCommand.");
         return(status);
     }
+
+    // HELLO WORLD NODE (+DRAW OVERRIDE)
 
     MString drawDbClassification = HelloWorldNode::GetDrawDbClassification();
 
@@ -58,6 +63,19 @@ MStatus initializePlugin(MObject pluginObj) {
 		return(status);
     }
 
+    // MULTIPLY NODE
+
+	status = pluginFn.registerNode(
+		MultiplyNode::GetTypeName(),
+		MultiplyNode::GetTypeId(),
+		MultiplyNode::Creator,
+		MultiplyNode::Initialize,
+        MultiplyNode::kDependNode);
+	if (!status) {
+		MGlobal::displayError("Failed to register node: " + MultiplyNode::GetTypeName());
+		return (status);
+	}
+
     return (status);
 }
 
@@ -66,11 +84,15 @@ MStatus uninitializePlugin(MObject pluginObj) {
 
     MFnPlugin pluginFn(pluginObj);
 
+    // HELLO WORLD COMMAND
+
     status = pluginFn.deregisterCommand(HelloWorldCommand::CommandName());
     if (!status) {
         MGlobal::displayError("Failed to deregister HelloWorldCommand.");
         return(status);
     }
+
+    // HELLO WORLD NODE (+ DRAW OVERRIDE)
 
     status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(HelloWorldNode::GetDrawDbClassification(), HelloWorldNode::GetDrawingRegistrationId());
     if (!status) {
@@ -83,6 +105,14 @@ MStatus uninitializePlugin(MObject pluginObj) {
 		MGlobal::displayError("Failed to deregister HelloWorldNode.");
 		return(status);
     }
+
+    // MULTIPLY NODE
+
+	status = pluginFn.deregisterNode(MultiplyNode::GetTypeId());
+	if (!status) {
+		MGlobal::displayError("Failed to deregister node: " + MultiplyNode::GetTypeName());
+		return(status);
+	}
 
     return (status);
 }

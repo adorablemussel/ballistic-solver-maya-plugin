@@ -7,8 +7,6 @@ public:
 	HelloWorldNode();
 	virtual ~HelloWorldNode() override;
 
-	//virtual MStatus doIt(const MArgList& args) override;
-
 // static methods:
 	static void* Creator();
 	static MStatus Initialize();
@@ -18,6 +16,4 @@ public:
 
 	static MString GetDrawDbClassification();
 	static MString GetDrawingRegistrationId();
-
-	//static MString CommandName();
 };
