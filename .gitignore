@@ -1,4 +1,7 @@
 /third-party/
+/dev/IFV-Borsuk/
+/out/
+*.stl
 
 # other
 /out/
