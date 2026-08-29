@@ -5,7 +5,7 @@
 //////////////////////
 // STATIC CONSTANTS //
 //////////////////////
-static const MTypeId TYPE_ID = MTypeId(0x0007F7F7); // numer, który u¿ywa Maya do identyfikacji locator node'a
+static const MTypeId TYPE_ID = MTypeId(0x0007F7F7); // numer, który u¿ywa Maya do identyfikacji tego node'a
 static const MString TYPE_NAME = "helloworld";
 
 static const MString DRAW_DB_CLASSIFICATION = "drawdb/geometry/helloworld";

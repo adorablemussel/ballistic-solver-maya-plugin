@@ -21,7 +21,7 @@ HelloWorldCommand::~HelloWorldCommand() {
 
 MStatus HelloWorldCommand::doIt(const MArgList& args) {
 	MGlobal::displayInfo("Hello World!");
-	//cout << "Hello World!\n";
+	cout << "Hello World!\n";
 
 	return (MS::kSuccess);
 }

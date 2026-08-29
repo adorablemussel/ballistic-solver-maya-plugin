@@ -14,26 +14,28 @@
 #include "HelloWorldDrawOverride.h"
 #include "HelloWorldNode.h"
 #include "MultiplyNode.h"
+#include "RollingNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
-#ifdef _DEBUG
-    MGlobal::displayInfo("Initialized Plugin!");
-#endif
     const char* vendor = "Szymon Krzysztofik";
+#ifndef _DEBUG
     const char* version = "1.0.0";
+#else
+    const char* version = "1.0.0 DEBUG";
+#endif
     const char* requiredApiVersion = "Any";
 
     MStatus status;
 
-	MFnPlugin pluginFn(pluginObj, vendor, version, requiredApiVersion, & status);
+	MFnPlugin pluginFn(pluginObj, vendor, version, requiredApiVersion, &status);
     if (!status) {
         MGlobal::displayError("Failed to initialize plugin: " + status.errorString());
         return(status);
     }
 
     // HELLO WORLD COMMAND
-
+     
     status = pluginFn.registerCommand(
         HelloWorldCommand::CommandName(), 
         HelloWorldCommand::Creator);
@@ -42,7 +44,7 @@ MStatus initializePlugin(MObject pluginObj) {
         return(status);
     }
 
-    // HELLO WORLD NODE (+DRAW OVERRIDE)
+    // HELLO WORLD NODE (+DRAW OVERRIDE) 
 
     MString drawDbClassification = HelloWorldNode::GetDrawDbClassification();
 
@@ -79,6 +81,19 @@ MStatus initializePlugin(MObject pluginObj) {
 		MGlobal::displayError("Failed to register node: " + MultiplyNode::GetTypeName());
 		return (status);
 	}
+
+    // ROLLING NODE
+
+    status = pluginFn.registerNode(
+        RollingNode::GetTypeName(),
+        RollingNode::GetTypeId(),
+        RollingNode::Creator,
+        RollingNode::Initialize,
+        RollingNode::kDependNode);
+    if (!status) {
+        MGlobal::displayError("Failed to register node: " + RollingNode::GetTypeName());
+        return (status);
+    }
 
     return (status);
 }
@@ -117,6 +132,14 @@ MStatus uninitializePlugin(MObject pluginObj) {
 		MGlobal::displayError("Failed to deregister node: " + MultiplyNode::GetTypeName());
 		return(status);
 	}
+
+    // ROLLING NODE
+
+    status = pluginFn.deregisterNode(RollingNode::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister node: " + RollingNode::GetTypeName());
+        return(status);
+    }
 
     return (status);
 }

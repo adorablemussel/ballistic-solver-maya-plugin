@@ -50,6 +50,7 @@ set(SOURCE_FILES
     "src/HelloWorldNode.cpp" 
     "src/HelloWorldDrawOverride.cpp"
     "src/MultiplyNode.cpp"
+    "src/RollingNode.cpp"
 )
 
 set(HEADER_FILES
@@ -57,6 +58,7 @@ set(HEADER_FILES
     "include/HelloWorldNode.h"
     "include/HelloWorldDrawOverride.h"
     "include/MultiplyNode.h"
+    "include/RollingNode.h"
 )
 
 ###############

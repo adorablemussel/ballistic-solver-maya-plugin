@@ -5,7 +5,7 @@
 //////////////////////
 // STATIC CONSTANTS //
 //////////////////////
-static const MTypeId TYPE_ID = MTypeId(0x0007F7F8); //MPxNode
+static const MTypeId TYPE_ID = MTypeId(0x0007F7F8);
 static const MString TYPE_NAME = "multiplynode";
 
 //////////////////////
@@ -36,7 +36,7 @@ MStatus MultiplyNode::compute(const MPlug& plug, MDataBlock& data)
 		double multiplicand = data.inputValue(multiplicandObj).asDouble();
 		double product = (multiplier * multiplicand);
 
-		MDataHandle productDataHandle = data.outputValue(productObj);
+		MDataHandle productDataHandle = data.outputValue(productObj); 
 		productDataHandle.setDouble(product);
 
 		data.setClean(plug);
