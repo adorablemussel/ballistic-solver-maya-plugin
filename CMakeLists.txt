@@ -51,7 +51,7 @@ set(SOURCE_FILES
     "src/HelloWorldDrawOverride.cpp"
     "src/MultiplyNode.cpp"
     "src/RollingNode.cpp"
-)
+    "src/SimpleDeformerNode.cpp")
 
 set(HEADER_FILES
     "include/HelloWorldCommand.h"
@@ -59,7 +59,7 @@ set(HEADER_FILES
     "include/HelloWorldDrawOverride.h"
     "include/MultiplyNode.h"
     "include/RollingNode.h"
-)
+    "include/SimpleDeformerNode.h")
 
 ###############
 # BUILDOWANIE #
@@ -92,6 +92,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenMaya.lib
     OpenMayaRender.lib
     OpenMayaUI.lib
+    OpenMayaAnim.lib
 )
 
 # nagłówki i biblioteki Gmsh

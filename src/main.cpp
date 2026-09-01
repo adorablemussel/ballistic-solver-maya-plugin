@@ -15,6 +15,7 @@
 #include "HelloWorldNode.h"
 #include "MultiplyNode.h"
 #include "RollingNode.h"
+#include "SimpleDeformerNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -95,6 +96,18 @@ MStatus initializePlugin(MObject pluginObj) {
         return (status);
     }
 
+    // DEFORMER NODE
+    status = pluginFn.registerNode(
+        SimpleDeformerNode::GetTypeName(),
+        SimpleDeformerNode::GetTypeID(),
+        SimpleDeformerNode::Creator,
+        SimpleDeformerNode::Initialize,
+        SimpleDeformerNode::kDeformerNode);
+    if (!status) {
+		MGlobal::displayError("Failed to register node: " + SimpleDeformerNode::GetTypeName());
+		return (status);
+    }
+
     return (status);
 }
 
@@ -142,4 +155,13 @@ MStatus uninitializePlugin(MObject pluginObj) {
     }
 
     return (status);
+
+    // DEFORMER NODE
+
+    status = pluginFn.deregisterNode(SimpleDeformerNode::GetTypeID());
+    if (!status) {
+		MGlobal::displayError("Failed to deregister node: " + SimpleDeformerNode::GetTypeName());
+		return(status);
+	}
+
 }
