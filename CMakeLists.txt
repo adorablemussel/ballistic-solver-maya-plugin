@@ -46,20 +46,28 @@ find_package(Maya REQUIRED)
 
 set(SOURCE_FILES
     "src/main.cpp"
+    "src/MyCallbacks.cpp"
     "src/HelloWorldCommand.cpp"
     "src/HelloWorldNode.cpp" 
     "src/HelloWorldDrawOverride.cpp"
     "src/MultiplyNode.cpp"
     "src/RollingNode.cpp"
-    "src/SimpleDeformerNode.cpp")
+    "src/SimpleDeformerNode.cpp" 
+    "src/BlendDeformerNode.cpp" 
+    "src/AttractDeformerNode.cpp"
+)
 
 set(HEADER_FILES
+    "include/MyCallbacks.h"
     "include/HelloWorldCommand.h"
     "include/HelloWorldNode.h"
     "include/HelloWorldDrawOverride.h"
     "include/MultiplyNode.h"
     "include/RollingNode.h"
-    "include/SimpleDeformerNode.h")
+    "include/SimpleDeformerNode.h" 
+    "include/BlendDeformerNode.h" 
+    "include/AttractDeformerNode.h"  
+)
 
 ###############
 # BUILDOWANIE #

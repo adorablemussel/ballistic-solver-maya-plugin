@@ -31,7 +31,7 @@ MStatus SimpleDeformerNode::deform(MDataBlock& dataBlock, MItGeometry& geoIter, 
 {
 	float envelopeValue = dataBlock.inputValue(envelope).asFloat();
 
-	if (envelopeValue != 0) {
+	if (envelopeValue != 0) { 
 		geoIter.reset(); 
 
 		while (!geoIter.isDone()) {
@@ -62,7 +62,7 @@ MStatus SimpleDeformerNode::Initialize()
 	return (MS::kSuccess);
 }
 
-MTypeId SimpleDeformerNode::GetTypeID()
+MTypeId SimpleDeformerNode::GetTypeId()
 {
 	return (TYPE_ID);
 }

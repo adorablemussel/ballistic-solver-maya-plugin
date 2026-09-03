@@ -14,6 +14,6 @@ public:
 	static void* Creator();
 	static MStatus Initialize();
 
-	static MTypeId GetTypeID();
+	static MTypeId GetTypeId();
 	static MString GetTypeName();
 };

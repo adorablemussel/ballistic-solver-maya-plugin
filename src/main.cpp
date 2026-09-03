@@ -10,12 +10,15 @@
 #include <string>
 #include <exception>
 
+#include "MyCallbacks.h"
 #include "HelloWorldCommand.h"
 #include "HelloWorldDrawOverride.h"
 #include "HelloWorldNode.h"
 #include "MultiplyNode.h"
 #include "RollingNode.h"
 #include "SimpleDeformerNode.h"
+#include "BlendDeformerNode.h"
+#include "AttractDeformerNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -35,8 +38,10 @@ MStatus initializePlugin(MObject pluginObj) {
         return(status);
     }
 
+    // CALLBACKS
+    //MyCallbacks::CallbacksAppend();
+
     // HELLO WORLD COMMAND
-     
     status = pluginFn.registerCommand(
         HelloWorldCommand::CommandName(), 
         HelloWorldCommand::Creator);
@@ -46,7 +51,6 @@ MStatus initializePlugin(MObject pluginObj) {
     }
 
     // HELLO WORLD NODE (+DRAW OVERRIDE) 
-
     MString drawDbClassification = HelloWorldNode::GetDrawDbClassification();
 
     status = pluginFn.registerNode(
@@ -71,7 +75,6 @@ MStatus initializePlugin(MObject pluginObj) {
     }
 
     // MULTIPLY NODE
-
 	status = pluginFn.registerNode(
 		MultiplyNode::GetTypeName(),
 		MultiplyNode::GetTypeId(),
@@ -84,7 +87,6 @@ MStatus initializePlugin(MObject pluginObj) {
 	}
 
     // ROLLING NODE
-
     status = pluginFn.registerNode(
         RollingNode::GetTypeName(),
         RollingNode::GetTypeId(),
@@ -96,15 +98,43 @@ MStatus initializePlugin(MObject pluginObj) {
         return (status);
     }
 
-    // DEFORMER NODE
+    // SIMPLE DEFORMER NODE
     status = pluginFn.registerNode(
         SimpleDeformerNode::GetTypeName(),
-        SimpleDeformerNode::GetTypeID(),
+        SimpleDeformerNode::GetTypeId(),
         SimpleDeformerNode::Creator,
         SimpleDeformerNode::Initialize,
         SimpleDeformerNode::kDeformerNode);
     if (!status) {
 		MGlobal::displayError("Failed to register node: " + SimpleDeformerNode::GetTypeName());
+		return (status);
+    }
+
+    // BLEND DEFORMER NODE
+    status = pluginFn.registerNode(
+        BlendDeformerNode::GetTypeName(),
+        BlendDeformerNode::GetTypeId(),
+        BlendDeformerNode::Creator,
+        BlendDeformerNode::Initialize,
+        BlendDeformerNode::kDeformerNode);
+	if (!status) {
+		MGlobal::displayError("Failed to register node: " + BlendDeformerNode::GetTypeName());
+		return (status);
+	}
+    // wstrzykniêty skrypt pythonowy dla opcji paintable (w C++ API nie ma tej funkcji)
+	MString cmd = MString("import maya.cmds as cmds\n");
+	cmd += MString("cmds.makePaintable(\"") + BlendDeformerNode::GetTypeName() + MString("\", \"weights\", attrType=\"multiFloat\", shapeMode=\"deformer\")");
+	MGlobal::executePythonCommand(cmd);
+
+    // ATTRACT DEFORMER NODE
+    status = pluginFn.registerNode(
+        AttractDeformerNode::GetTypeName(),
+        AttractDeformerNode::GetTypeId(),
+        AttractDeformerNode::Creator,
+        AttractDeformerNode::Initialize,
+        AttractDeformerNode::kDeformerNode);
+    if (!status) {
+		MGlobal::displayError("Failed to register node: " + AttractDeformerNode::GetTypeName());
 		return (status);
     }
 
@@ -116,8 +146,10 @@ MStatus uninitializePlugin(MObject pluginObj) {
 
     MFnPlugin pluginFn(pluginObj);
 
-    // HELLO WORLD COMMAND
+    // CALLBACKS
+    MyCallbacks::CallbacksRemove();
 
+    // HELLO WORLD COMMAND
     status = pluginFn.deregisterCommand(HelloWorldCommand::CommandName());
     if (!status) {
         MGlobal::displayError("Failed to deregister HelloWorldCommand.");
@@ -125,7 +157,6 @@ MStatus uninitializePlugin(MObject pluginObj) {
     }
 
     // HELLO WORLD NODE (+ DRAW OVERRIDE)
-
     status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(HelloWorldNode::GetDrawDbClassification(), HelloWorldNode::GetDrawingRegistrationId());
     if (!status) {
 		MGlobal::displayError("Failed to deregister HelloWorldDrawOverride.");
@@ -139,7 +170,6 @@ MStatus uninitializePlugin(MObject pluginObj) {
     }
 
     // MULTIPLY NODE
-
 	status = pluginFn.deregisterNode(MultiplyNode::GetTypeId());
 	if (!status) {
 		MGlobal::displayError("Failed to deregister node: " + MultiplyNode::GetTypeName());
@@ -147,21 +177,36 @@ MStatus uninitializePlugin(MObject pluginObj) {
 	}
 
     // ROLLING NODE
-
     status = pluginFn.deregisterNode(RollingNode::GetTypeId());
     if (!status) {
         MGlobal::displayError("Failed to deregister node: " + RollingNode::GetTypeName());
         return(status);
     }
 
-    return (status);
-
-    // DEFORMER NODE
-
-    status = pluginFn.deregisterNode(SimpleDeformerNode::GetTypeID());
+    // SIMPLE DEFORMER NODE
+    status = pluginFn.deregisterNode(SimpleDeformerNode::GetTypeId());
     if (!status) {
 		MGlobal::displayError("Failed to deregister node: " + SimpleDeformerNode::GetTypeName());
 		return(status);
 	}
 
+	// BLEND DEFORMER NODE
+	MString cmd = MString("import maya.cmds as cmds\n");
+	cmd += MString("cmds.makePaintable(\"") + BlendDeformerNode::GetTypeName() + MString("\", \"weights\", remove=True)");
+	MGlobal::executePythonCommand(cmd); 
+	status = pluginFn.deregisterNode(BlendDeformerNode::GetTypeId());
+	if (!status) {
+		MGlobal::displayError("Failed to deregister node: " + BlendDeformerNode::GetTypeName());
+		return(status);
+	}
+
+    // ATTRACT DEFORMER NODE
+    status = pluginFn.deregisterNode(AttractDeformerNode::GetTypeId());
+    if (!status) {
+		MGlobal::displayError("Failed to deregister node: " + AttractDeformerNode::GetTypeName());
+		return(status);
+    }
+
+
+    return (status);
 }
