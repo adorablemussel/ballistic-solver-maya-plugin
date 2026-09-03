@@ -4,8 +4,12 @@
 
 class MyCallbacks {
 public:
-	static MCallbackIdArray sCallbackIds;
+	MyCallbacks() = delete;
+	~MyCallbacks() = delete;
+	MyCallbacks(const MyCallbacks&) = delete;
+	MyCallbacks& operator=(const MyCallbacks) = delete;
 
+// static methods:
 	static void OnNewScene(void* clientData);
 	static void OnTimeChanged(void* clientData);
 	static void OnSelectionChanged(void* clientData);
@@ -17,5 +21,8 @@ public:
 
 	static void CallbacksAppend();
 	static void CallbacksRemove();
+
+private:
+	static MCallbackIdArray sCallbackIds;
 
 };

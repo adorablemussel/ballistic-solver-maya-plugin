@@ -19,6 +19,8 @@
 #include "SimpleDeformerNode.h"
 #include "BlendDeformerNode.h"
 #include "AttractDeformerNode.h"
+#include "SimpleContext.h"
+#include "SimpleContextCommand.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -138,6 +140,13 @@ MStatus initializePlugin(MObject pluginObj) {
 		return (status);
     }
 
+    // SIMPLE CONTEXT
+    status = pluginFn.registerContextCommand(SimpleContextCommand::GetCommandName(), SimpleContextCommand::Creator);
+    if (!status) {
+        MGlobal::displayError("Failed to register context command: " + SimpleContextCommand::GetCommandName());
+    }
+
+
     return (status);
 }
 
@@ -207,6 +216,12 @@ MStatus uninitializePlugin(MObject pluginObj) {
 		return(status);
     }
 
+    // SIMPLE CONTEXT
+    status = pluginFn.deregisterContextCommand(SimpleContextCommand::GetCommandName());
+    if (!status) {
+		MGlobal::displayError("Failed to deregister context command: " + SimpleContextCommand::GetCommandName());
+		return(status);
+    }
 
     return (status);
 }

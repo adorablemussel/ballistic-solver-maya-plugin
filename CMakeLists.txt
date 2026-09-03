@@ -44,6 +44,20 @@ find_package(Maya REQUIRED)
 # PLIKI PROJEKTU #
 ##################
 
+set(HEADER_FILES
+    "include/MyCallbacks.h"
+    "include/HelloWorldCommand.h"
+    "include/HelloWorldNode.h"
+    "include/HelloWorldDrawOverride.h"
+    "include/MultiplyNode.h"
+    "include/RollingNode.h"
+    "include/SimpleDeformerNode.h" 
+    "include/BlendDeformerNode.h" 
+    "include/AttractDeformerNode.h"  
+    "include/SimpleContext.h"
+    "include/SimpleContextCommand.h" 
+)
+
 set(SOURCE_FILES
     "src/main.cpp"
     "src/MyCallbacks.cpp"
@@ -55,18 +69,8 @@ set(SOURCE_FILES
     "src/SimpleDeformerNode.cpp" 
     "src/BlendDeformerNode.cpp" 
     "src/AttractDeformerNode.cpp"
-)
-
-set(HEADER_FILES
-    "include/MyCallbacks.h"
-    "include/HelloWorldCommand.h"
-    "include/HelloWorldNode.h"
-    "include/HelloWorldDrawOverride.h"
-    "include/MultiplyNode.h"
-    "include/RollingNode.h"
-    "include/SimpleDeformerNode.h" 
-    "include/BlendDeformerNode.h" 
-    "include/AttractDeformerNode.h"  
+    "src/SimpleContext.cpp"
+    "src/SimpleContextCommand.cpp" 
 )
 
 ###############
