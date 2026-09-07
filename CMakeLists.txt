@@ -45,32 +45,32 @@ find_package(Maya REQUIRED)
 ##################
 
 set(HEADER_FILES
-    "include/MyCallbacks.h"
-    "include/HelloWorldCommand.h"
-    "include/HelloWorldNode.h"
-    "include/HelloWorldDrawOverride.h"
-    "include/MultiplyNode.h"
-    "include/RollingNode.h"
-    "include/SimpleDeformerNode.h" 
-    "include/BlendDeformerNode.h" 
-    "include/AttractDeformerNode.h"  
-    "include/SimpleContext.h"
-    "include/SimpleContextCommand.h" 
-)
+    "include/test-code/MyCallbacks.h"
+    "include/test-code/HelloWorldCommand.h"
+    "include/test-code/HelloWorldNode.h"
+    "include/test-code/HelloWorldDrawOverride.h"
+    "include/test-code/MultiplyNode.h"
+    "include/test-code/RollingNode.h"
+    "include/test-code/SimpleDeformerNode.h" 
+    "include/test-code/BlendDeformerNode.h" 
+    "include/test-code/AttractDeformerNode.h"  
+    "include/test-code/SimpleContext.h"
+    "include/test-code/SimpleContextCommand.h" 
+    "include/MaterialData.h")
 
 set(SOURCE_FILES
     "src/main.cpp"
-    "src/MyCallbacks.cpp"
-    "src/HelloWorldCommand.cpp"
-    "src/HelloWorldNode.cpp" 
-    "src/HelloWorldDrawOverride.cpp"
-    "src/MultiplyNode.cpp"
-    "src/RollingNode.cpp"
-    "src/SimpleDeformerNode.cpp" 
-    "src/BlendDeformerNode.cpp" 
-    "src/AttractDeformerNode.cpp"
-    "src/SimpleContext.cpp"
-    "src/SimpleContextCommand.cpp" 
+    "src/test-code/MyCallbacks.cpp"
+    "src/test-code/HelloWorldCommand.cpp"
+    "src/test-code/HelloWorldNode.cpp" 
+    "src/test-code/HelloWorldDrawOverride.cpp"
+    "src/test-code/MultiplyNode.cpp"
+    "src/test-code/RollingNode.cpp"
+    "src/test-code/SimpleDeformerNode.cpp" 
+    "src/test-code/BlendDeformerNode.cpp" 
+    "src/test-code/AttractDeformerNode.cpp"
+    "src/test-code/SimpleContext.cpp"
+    "src/test-code/SimpleContextCommand.cpp" 
 )
 
 ###############
@@ -94,7 +94,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 ##############
 
 # nagłówki projektu
-target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(${PROJECT_NAME} PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/test-code"
+)
 
 # nagłówki i biblioteki Mayi
 target_include_directories(${PROJECT_NAME} PRIVATE "${MAYA_DEVKIT_BASE_DIR}/include")
