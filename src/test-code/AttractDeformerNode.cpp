@@ -26,7 +26,7 @@ MObject AttractDeformerNode::targetPositionObj;
 ////////////////////
 // PUBLIC METHODS //
 ////////////////////
-AttractDeformerNode::AttractDeformerNode()
+AttractDeformerNode::AttractDeformerNode() : MPxDeformerNode()
 {
 
 }

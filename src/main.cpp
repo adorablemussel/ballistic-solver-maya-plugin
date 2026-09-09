@@ -21,6 +21,7 @@
 #include "AttractDeformerNode.h"
 #include "SimpleContext.h"
 #include "SimpleContextCommand.h"
+#include "BallisticBodyData.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -141,11 +142,22 @@ MStatus initializePlugin(MObject pluginObj) {
     }
 
     // SIMPLE CONTEXT
-    status = pluginFn.registerContextCommand(SimpleContextCommand::GetCommandName(), SimpleContextCommand::Creator);
+    status = pluginFn.registerContextCommand(
+        SimpleContextCommand::GetCommandName(), 
+        SimpleContextCommand::Creator);
     if (!status) {
         MGlobal::displayError("Failed to register context command: " + SimpleContextCommand::GetCommandName());
     }
 
+    // BALLISTIC BODY DATA
+    status = pluginFn.registerData(
+        BallisticBodyData::GetTypeName(),
+        BallisticBodyData::GetTypeId(),
+        BallisticBodyData::Creator,
+        BallisticBodyData::kData); 
+	if (!status) {
+		MGlobal::displayError("Failed to register data: " + BallisticBodyData::GetTypeName());
+	}
 
     return (status);
 }
@@ -220,6 +232,13 @@ MStatus uninitializePlugin(MObject pluginObj) {
     status = pluginFn.deregisterContextCommand(SimpleContextCommand::GetCommandName());
     if (!status) {
 		MGlobal::displayError("Failed to deregister context command: " + SimpleContextCommand::GetCommandName());
+		return(status);
+    }
+
+    // BALLISTIC BODY DATA
+    status = pluginFn.deregisterData(BallisticBodyData::GetTypeId());
+    if (!status) {
+		MGlobal::displayError("Failed to deregister data: " + BallisticBodyData::GetTypeName());
 		return(status);
     }
 
