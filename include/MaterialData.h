@@ -3,7 +3,7 @@
 struct MaterialData {
 // sprê¿ystoœæ
 	float density;
-	float youngMaterial;
+	float youngModulus;
 	float poissonRatio;
 
 // plastycznoœæ (Johnson-Cook)

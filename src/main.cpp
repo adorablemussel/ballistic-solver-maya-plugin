@@ -22,6 +22,7 @@
 #include "SimpleContext.h"
 #include "SimpleContextCommand.h"
 #include "BallisticBodyData.h"
+#include "BallisticMaterialNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -159,6 +160,18 @@ MStatus initializePlugin(MObject pluginObj) {
 		MGlobal::displayError("Failed to register data: " + BallisticBodyData::GetTypeName());
 	}
 
+    // BALLISTIC MATERIAL NODE
+	status = pluginFn.registerNode(
+		BallisticMaterialNode::GetTypeName(),
+        BallisticMaterialNode::GetTypeId(),
+        BallisticMaterialNode::Creator,
+        BallisticMaterialNode::Initialize,
+        BallisticMaterialNode::kDependNode);
+	if (!status) {
+		MGlobal::displayError("Failed to register node: " + BallisticMaterialNode::GetTypeName());
+		return (status);
+	}
+
     return (status);
 }
 
@@ -241,6 +254,13 @@ MStatus uninitializePlugin(MObject pluginObj) {
 		MGlobal::displayError("Failed to deregister data: " + BallisticBodyData::GetTypeName());
 		return(status);
     }
+
+    // BALLISTIC MATERIAL NODE
+	status = pluginFn.deregisterNode(BallisticMaterialNode::GetTypeId());
+	if (!status) {
+		MGlobal::displayError("Failed to deregister node: " + BallisticMaterialNode::GetTypeName());
+		return(status);
+	}
 
     return (status);
 }

@@ -19,6 +19,11 @@ public:
 	virtual MTypeId typeId() const override;
 	virtual MString name() const override;
 
+	virtual MStatus readASCII(const MArgList& argList, unsigned int& endOfTheLastParsedElement) override;
+	virtual MStatus readBinary(std::istream& in, unsigned int length) override;
+	virtual MStatus writeASCII(std::ostream& out) override;
+	virtual MStatus writeBinary(std::ostream& out) override;
+
 // static methods:
 	static void* Creator();
 

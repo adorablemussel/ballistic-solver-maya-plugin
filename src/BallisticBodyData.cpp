@@ -56,6 +56,30 @@ MString BallisticBodyData::name() const
 }
 
 
+MStatus BallisticBodyData::readASCII(const MArgList& argList, unsigned int& endOfTheLastParsedElement)
+{
+	// TO DO
+	return (MS::kSuccess);
+}
+
+MStatus BallisticBodyData::readBinary(std::istream& in, unsigned int length)
+{
+	// TO DO
+	return (MS::kSuccess);
+}
+
+MStatus BallisticBodyData::writeASCII(std::ostream& out)
+{
+	// TO DO
+	return (MS::kSuccess);
+}
+
+MStatus BallisticBodyData::writeBinary(std::ostream& out)
+{
+	// TO DO
+	return (MS::kSuccess);
+}
+
 ////////////////////
 // STATIC METHODS //
 ////////////////////
