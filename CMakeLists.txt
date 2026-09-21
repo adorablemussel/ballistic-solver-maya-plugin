@@ -56,8 +56,9 @@ set(HEADER_FILES
     "include/test-code/AttractDeformerNode.h"  
     "include/test-code/SimpleContext.h"
     "include/test-code/SimpleContextCommand.h" 
-    "include/MaterialData.h" 
-    "include/BallisticBodyData.h" "include/BallisticMaterialNode.h")
+    "include/bMaterial.h" 
+    "include/bBodyData.h" 
+    "include/bMaterialNode.h")
 
 set(SOURCE_FILES
     "src/main.cpp"
@@ -72,7 +73,8 @@ set(SOURCE_FILES
     "src/test-code/AttractDeformerNode.cpp"
     "src/test-code/SimpleContext.cpp"
     "src/test-code/SimpleContextCommand.cpp" 
-    "src/BallisticBodyData.cpp" "src/BallisticMaterialNode.cpp")
+    "src/bBodyData.cpp" 
+    "src/bMaterialNode.cpp")
 
 ###############
 # BUILDOWANIE #

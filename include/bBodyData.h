@@ -1,19 +1,20 @@
 #pragma once
 
-#include "MaterialData.h"
+#include "bMaterial.h"
 
 #include <vector>
 #include <maya/MPxData.h>
 
-class BallisticBodyData : public MPxData {
+// zbiornik na wszystkie potrzebne dane
+class bBodyData : public MPxData {
 public:
-	MaterialData material;
+	bMaterial material;
 	std::vector<float> vertices;
 	std::vector<int> tetrahedrons;
 
-	BallisticBodyData();
-	virtual ~BallisticBodyData() override;
-	
+	bBodyData();
+	virtual ~bBodyData() override;
+
 // virtual methods:
 	virtual void copy(const MPxData& src) override;
 	virtual MTypeId typeId() const override;

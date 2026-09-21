@@ -2,10 +2,11 @@
 
 #include <maya/MPxNode.h>
 
-class BallisticMaterialNode : public MPxNode {
+// wêze³ do definiowania materia³u 
+class bMaterialNode : public MPxNode {
 public:
-	BallisticMaterialNode();
-	virtual ~BallisticMaterialNode() override;
+	bMaterialNode();
+	virtual ~bMaterialNode() override;
 
 	virtual MStatus compute(const MPlug& plug, MDataBlock& data) override;
 

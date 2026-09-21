@@ -21,8 +21,8 @@
 #include "AttractDeformerNode.h"
 #include "SimpleContext.h"
 #include "SimpleContextCommand.h"
-#include "BallisticBodyData.h"
-#include "BallisticMaterialNode.h"
+#include "bBodyData.h"
+#include "bMaterialNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -32,7 +32,7 @@ MStatus initializePlugin(MObject pluginObj) {
 #else
     const char* version = "1.0.0 DEBUG";
 #endif
-    const char* requiredApiVersion = "Any";
+    const char* requiredApiVersion = "Any"; 
 
     MStatus status;
 
@@ -152,23 +152,23 @@ MStatus initializePlugin(MObject pluginObj) {
 
     // BALLISTIC BODY DATA
     status = pluginFn.registerData(
-        BallisticBodyData::GetTypeName(),
-        BallisticBodyData::GetTypeId(),
-        BallisticBodyData::Creator,
-        BallisticBodyData::kData); 
+        bBodyData::GetTypeName(),
+        bBodyData::GetTypeId(),
+        bBodyData::Creator,
+        bBodyData::kData); 
 	if (!status) {
-		MGlobal::displayError("Failed to register data: " + BallisticBodyData::GetTypeName());
+		MGlobal::displayError("Failed to register data: " + bBodyData::GetTypeName());
 	}
 
-    // BALLISTIC MATERIAL NODE
+	// BALLISTIC MATERIAL NODE
 	status = pluginFn.registerNode(
-		BallisticMaterialNode::GetTypeName(),
-        BallisticMaterialNode::GetTypeId(),
-        BallisticMaterialNode::Creator,
-        BallisticMaterialNode::Initialize,
-        BallisticMaterialNode::kDependNode);
+		bMaterialNode::GetTypeName(),
+		bMaterialNode::GetTypeId(),
+		bMaterialNode::Creator,
+		bMaterialNode::Initialize,
+		bMaterialNode::kDependNode);
 	if (!status) {
-		MGlobal::displayError("Failed to register node: " + BallisticMaterialNode::GetTypeName());
+		MGlobal::displayError("Failed to register node: " + bMaterialNode::GetTypeName());
 		return (status);
 	}
 
@@ -249,16 +249,16 @@ MStatus uninitializePlugin(MObject pluginObj) {
     }
 
     // BALLISTIC BODY DATA
-    status = pluginFn.deregisterData(BallisticBodyData::GetTypeId());
+    status = pluginFn.deregisterData(bBodyData::GetTypeId());
     if (!status) {
-		MGlobal::displayError("Failed to deregister data: " + BallisticBodyData::GetTypeName());
+		MGlobal::displayError("Failed to deregister data: " + bBodyData::GetTypeName());
 		return(status);
     }
 
-    // BALLISTIC MATERIAL NODE
-	status = pluginFn.deregisterNode(BallisticMaterialNode::GetTypeId());
+	// BALLISTIC MATERIAL NODE
+	status = pluginFn.deregisterNode(bMaterialNode::GetTypeId());
 	if (!status) {
-		MGlobal::displayError("Failed to deregister node: " + BallisticMaterialNode::GetTypeName());
+		MGlobal::displayError("Failed to deregister node: " + bMaterialNode::GetTypeName());
 		return(status);
 	}
 

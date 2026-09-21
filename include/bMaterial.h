@@ -1,6 +1,7 @@
 #pragma once
 
-struct MaterialData {
+// struktura pomocnicza dla material w bBodyData (zbiornika na dane)
+struct bMaterial {
 // sprê¿ystoœæ
 	float density;
 	float youngModulus;
