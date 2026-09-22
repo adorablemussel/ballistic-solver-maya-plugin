@@ -2,22 +2,17 @@
 
 #include "bMaterial.h"
 
-#include <vector>
-#include <array>
 #include <maya/MPxData.h>
 
-// zbiornik na zagregowane dane material, vertices, tetrahedrons + velocity
-class bBodyData : public MPxData {
+// zbiornik na dane material
+class bMaterialData : public MPxData {
 public:
 	bMaterial material;
-	std::vector<float> vertices;
-	std::vector<int> tetrahedrons;
-	std::array<float, 3> velocity;
 
-	bBodyData();
-	virtual ~bBodyData() override;
+	bMaterialData();
+	virtual ~bMaterialData() override;
 
-// virtual methods:
+	// virtual methods:
 	virtual void copy(const MPxData& src) override;
 	virtual MTypeId typeId() const override;
 	virtual MString name() const override;
@@ -27,7 +22,7 @@ public:
 	virtual MStatus writeASCII(std::ostream& out) override;
 	virtual MStatus writeBinary(std::ostream& out) override;
 
-// static methods:
+	// static methods:
 	static void* Creator();
 
 	static MTypeId GetTypeId();

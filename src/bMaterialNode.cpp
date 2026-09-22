@@ -1,5 +1,5 @@
 #include "bMaterialNode.h"
-#include "bBodyData.h"
+#include "bMaterialData.h"
 #include "bMaterial.h"
 
 #include <maya/MFnNumericAttribute.h>
@@ -65,10 +65,10 @@ MStatus bMaterialNode::compute(const MPlug& plug, MDataBlock& data)
     if (plug == materialObj)
     {
         MFnPluginData pluginDataFn;
-        MObject newMaterialObject = pluginDataFn.create(bBodyData::GetTypeId());
+        MObject newMaterialObject = pluginDataFn.create(bMaterialData::GetTypeId());
 
         MPxData* rawData = pluginDataFn.data();
-        bBodyData* outData = dynamic_cast<bBodyData*>(rawData);
+        bMaterialData* outData = dynamic_cast<bMaterialData*>(rawData);
         if (!outData) {
             return (MS::kFailure);
         }
@@ -210,7 +210,7 @@ MStatus bMaterialNode::Initialize()
     numericAttr.setReadable(false);
 
     MFnTypedAttribute typedAttr;
-    materialObj = typedAttr.create("material", "mat", bBodyData::GetTypeId());
+    materialObj = typedAttr.create("material", "mat", bMaterialData::GetTypeId());
     typedAttr.setStorable(false);
     typedAttr.setWritable(false);
     typedAttr.setReadable(true);

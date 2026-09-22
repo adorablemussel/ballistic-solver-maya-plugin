@@ -39,9 +39,10 @@ void bBodyData::copy(const MPxData& src)
 		this->material = srcData->material;
 		this->vertices = srcData->vertices;
 		this->tetrahedrons = srcData->tetrahedrons;
+		this->velocity = srcData->velocity;
 	}
 	else {
-		MGlobal::displayError("Failed to copy data to bBodyData data type");
+		MGlobal::displayError("Failed to copy data to " + bBodyData::GetTypeName()  + " data type");
 	}
 }
 
@@ -85,7 +86,7 @@ MStatus bBodyData::writeBinary(std::ostream& out)
 ////////////////////
 void* bBodyData::Creator()
 {
-	return (new bBodyData);
+	return (new bBodyData());
 }
 
 MTypeId bBodyData::GetTypeId()

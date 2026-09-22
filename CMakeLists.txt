@@ -58,7 +58,10 @@ set(HEADER_FILES
     "include/test-code/SimpleContextCommand.h" 
     "include/bMaterial.h" 
     "include/bBodyData.h" 
-    "include/bMaterialNode.h")
+    "include/bMaterialNode.h" 
+    "include/bMaterialData.h" 
+    "include/bMeshData.h" 
+    "include/bMesherNode.h")
 
 set(SOURCE_FILES
     "src/main.cpp"
@@ -74,7 +77,10 @@ set(SOURCE_FILES
     "src/test-code/SimpleContext.cpp"
     "src/test-code/SimpleContextCommand.cpp" 
     "src/bBodyData.cpp" 
-    "src/bMaterialNode.cpp")
+    "src/bMaterialNode.cpp" 
+    "src/bMaterialData.cpp" 
+    "src/bMeshData.cpp" 
+    "src/bMesherNode.cpp")
 
 ###############
 # BUILDOWANIE #

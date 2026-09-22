@@ -21,8 +21,12 @@
 #include "AttractDeformerNode.h"
 #include "SimpleContext.h"
 #include "SimpleContextCommand.h"
-#include "bBodyData.h"
+
+#include "bMaterialData.h"
 #include "bMaterialNode.h"
+#include "bMeshData.h"
+#include "bMesherNode.h"
+#include "bBodyData.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -42,8 +46,9 @@ MStatus initializePlugin(MObject pluginObj) {
         return(status);
     }
 
+    /*
     // CALLBACKS
-    //MyCallbacks::CallbacksAppend();
+    MyCallbacks::CallbacksAppend();
 
     // HELLO WORLD COMMAND
     status = pluginFn.registerCommand(
@@ -149,16 +154,18 @@ MStatus initializePlugin(MObject pluginObj) {
     if (!status) {
         MGlobal::displayError("Failed to register context command: " + SimpleContextCommand::GetCommandName());
     }
+    */
 
-    // BALLISTIC BODY DATA
+
+    // BALLISITC MATERIAL DATA
     status = pluginFn.registerData(
-        bBodyData::GetTypeName(),
-        bBodyData::GetTypeId(),
-        bBodyData::Creator,
-        bBodyData::kData); 
-	if (!status) {
-		MGlobal::displayError("Failed to register data: " + bBodyData::GetTypeName());
-	}
+        bMaterialData::GetTypeName(),
+        bMaterialData::GetTypeId(),
+        bMaterialData::Creator,
+        bMaterialData::kData);
+    if (!status) {
+        MGlobal::displayError("Failed to register data: " + bMaterialData::GetTypeName());
+    }
 
 	// BALLISTIC MATERIAL NODE
 	status = pluginFn.registerNode(
@@ -172,6 +179,38 @@ MStatus initializePlugin(MObject pluginObj) {
 		return (status);
 	}
 
+    // BALLISTIC MESH DATA
+    status = pluginFn.registerData(
+        bMeshData::GetTypeName(),
+        bMeshData::GetTypeId(),
+        bMeshData::Creator,
+        bMeshData::kData);
+    if (!status) {
+        MGlobal::displayError("Failed to register data: " + bMeshData::GetTypeName());
+    }
+
+    // BALLISTIC MESHER NODE
+    status = pluginFn.registerNode(
+        bMesherNode::GetTypeName(),
+        bMesherNode::GetTypeId(),
+        bMesherNode::Creator,
+        bMesherNode::Initialize,
+        bMesherNode::kDependNode);
+    if (!status) {
+        MGlobal::displayError("Failed to register data: " + bMesherNode::GetTypeName());
+    }
+
+    // BALLISTIC BODY DATA
+    status = pluginFn.registerData(
+        bBodyData::GetTypeName(),
+        bBodyData::GetTypeId(),
+        bBodyData::Creator,
+        bBodyData::kData); 
+	if (!status) {
+		MGlobal::displayError("Failed to register data: " + bBodyData::GetTypeName());
+	}
+
+
     return (status);
 }
 
@@ -180,6 +219,7 @@ MStatus uninitializePlugin(MObject pluginObj) {
 
     MFnPlugin pluginFn(pluginObj);
 
+    /*
     // CALLBACKS
     MyCallbacks::CallbacksRemove();
 
@@ -247,12 +287,14 @@ MStatus uninitializePlugin(MObject pluginObj) {
 		MGlobal::displayError("Failed to deregister context command: " + SimpleContextCommand::GetCommandName());
 		return(status);
     }
+    */
 
-    // BALLISTIC BODY DATA
-    status = pluginFn.deregisterData(bBodyData::GetTypeId());
+
+    // BALLISTIC MATERIAL DATA
+    status = pluginFn.deregisterData(bMaterialData::GetTypeId());
     if (!status) {
-		MGlobal::displayError("Failed to deregister data: " + bBodyData::GetTypeName());
-		return(status);
+        MGlobal::displayError("Failed to deregister data: " + bMaterialData::GetTypeName());
+        return(status);
     }
 
 	// BALLISTIC MATERIAL NODE
@@ -261,6 +303,27 @@ MStatus uninitializePlugin(MObject pluginObj) {
 		MGlobal::displayError("Failed to deregister node: " + bMaterialNode::GetTypeName());
 		return(status);
 	}
+
+    // BALLISTIC MESH DATA
+    status = pluginFn.deregisterData(bMeshData::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister data: " + bMeshData::GetTypeName());
+        return(status);
+    }
+
+    // BALLISTIC MESHER NODE
+    status = pluginFn.deregisterNode(bMesherNode::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister node: " + bMesherNode::GetTypeName());
+        return(status);
+    }
+
+    // BALLISTIC BODY DATA
+    status = pluginFn.deregisterData(bBodyData::GetTypeId());
+    if (!status) {
+		MGlobal::displayError("Failed to deregister data: " + bBodyData::GetTypeName());
+		return(status);
+    }
 
     return (status);
 }
