@@ -37,16 +37,17 @@ bMesherNode::~bMesherNode()
 
 MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 {
-	if (plug == outTetMeshObj) {
-
+	if (plug == outTetMeshObj) 
+	{
 		float elementSize = data.inputValue(elementSizeObj).asFloat();
 		MObject inputMesh = data.inputValue(inMeshObj).asMesh();
-
+		
 		MFnPluginData pluginDataFn;
 		MObject newOutTetMeshObj = pluginDataFn.create(bMeshData::GetTypeId());
 
 		MPxData* rawData = pluginDataFn.data();
 		bMeshData* outData = dynamic_cast<bMeshData*>(rawData);
+
 		if (!outData) {
 			return (MS::kFailure);
 		}
@@ -90,12 +91,12 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 				std::vector<std::vector<std::size_t>> elementTags(1);
 				std::vector<std::vector<std::size_t>> elementNodeTags(1);
 
-				int numTriangles = triangleVertices.length() / 3;
+				std::size_t numTriangles = triangleVertices.length() / 3;
 				
 				elementTags[0].resize(numTriangles);
 				elementNodeTags[0].resize(triangleVertices.length());
 
-				for (int i = 0; i < numTriangles; i++) {
+				for (std::size_t i = 0; i < numTriangles; i++) {
 					elementTags[0][i] = i + 1; // TUTAJ TE¯ GMSH INDEKSUJE OD 1!!
 					
 					elementNodeTags[0][i * 3 + 0] = triangleVertices[i * 3 + 0] + 1;
@@ -103,7 +104,7 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 					elementNodeTags[0][i * 3 + 2] = triangleVertices[i * 3 + 2] + 1;
 				}
 
-				gmsh::model::mesh::addElements(2, surfaceTag, elementTypes, elementTags, elementNodeTags);
+				gmsh::model::mesh::addElements(2, surfaceTag, elementTypes, elementTags, elementNodeTags); // 2 = 3-wêz³owy trójk¹t
 
 				// wype³nienie wnêtrza
 				int volumeTag = 1;

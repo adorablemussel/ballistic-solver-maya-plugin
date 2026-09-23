@@ -8,7 +8,7 @@ if len(sys.argv) > 1:
     
 try:
     tn = telnetlib.Telnet("localhost", port)
-    tn.write('catchQuiet(`loadPlugin "BallisticSolver"`);'.encode())
+    tn.write('catchQuiet(`loadPlugin "BallisticSolver"`); print("BallisticSolver plugin loaded successfully.");'.encode())
     tn.close()
 except:
     pass
