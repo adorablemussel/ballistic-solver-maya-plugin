@@ -61,7 +61,7 @@ set(HEADER_FILES
     "include/bMaterialNode.h" 
     "include/bMaterialData.h" 
     "include/bMeshData.h" 
-    "include/bMesherNode.h")
+    "include/bMesherNode.h" "include/SimpleLocatorNode.h" "include/SimpleLocatorDrawOverride.h" "include/SimpleLocatorUserData.h")
 
 set(SOURCE_FILES
     "src/main.cpp"
@@ -80,7 +80,7 @@ set(SOURCE_FILES
     "src/bMaterialNode.cpp" 
     "src/bMaterialData.cpp" 
     "src/bMeshData.cpp" 
-    "src/bMesherNode.cpp")
+    "src/bMesherNode.cpp" "src/SimpleLocatorNode.cpp" "src/SimpleLocatorDrawOverride.cpp" "src/SimpleLocatorUserData.cpp")
 
 ###############
 # BUILDOWANIE #
