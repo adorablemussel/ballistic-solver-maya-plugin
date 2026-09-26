@@ -1,0 +1,32 @@
+#pragma once
+
+#include <maya/MPxDrawOverride.h>
+
+class bMeshVisualizationDrawOverride : public MHWRender::MPxDrawOverride {
+public:
+	virtual ~bMeshVisualizationDrawOverride() override;
+
+	virtual MHWRender::DrawAPI supportedDrawAPIs() const override;
+
+	virtual bool hasUIDrawables() const override;
+
+	virtual MUserData* prepareForDraw(
+		const MDagPath& objPath,
+		const MDagPath& cameraPath,
+		const MFrameContext& frameContext,
+		MUserData* oldData)
+		override;
+
+	virtual void addUIDrawables(
+		const MDagPath& objPath,
+		MHWRender::MUIDrawManager& drawManager,
+		const MHWRender::MFrameContext& frameContext,
+		const MUserData* data)
+		override;
+
+// static methods:
+	static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
+
+private:
+	bMeshVisualizationDrawOverride(const MObject& obj);
+};

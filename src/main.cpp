@@ -29,6 +29,8 @@
 #include "bMeshData.h"
 #include "bMesherNode.h"
 #include "bBodyData.h"
+#include "bMeshVisualizationNode.h"
+#include "bMeshVisualizationDrawOverride.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -156,7 +158,6 @@ MStatus initializePlugin(MObject pluginObj) {
     if (!status) {
         MGlobal::displayError("Failed to register context command: " + SimpleContextCommand::GetCommandName());
     }
-    */
 
     // SIMPLE LOCATOR NODE & SIMPLE LOCATOR DRAW OVERRIDE
     MString drawDbClassification = SimpleLocatorNode::GetDrawDbClassification();
@@ -181,6 +182,7 @@ MStatus initializePlugin(MObject pluginObj) {
         MGlobal::displayError("Failed to register node: SimpleLocatorDrawOverride.");
         return (status);
     }
+    */
 
     // BALLISITC MATERIAL DATA
     status = pluginFn.registerData(
@@ -236,6 +238,30 @@ MStatus initializePlugin(MObject pluginObj) {
         bBodyData::kData); 
 	if (!status) {
 		MGlobal::displayError("Failed to register data: " + bBodyData::GetTypeName());
+        return (status);
+    }
+
+    // BALLISTIC MESH VISUALIZATION NODE & BALLISTIC MESH VISUALIZATION DRAW OVERRIDE
+    MString drawDbClassification = bMeshVisualizationNode::GetDrawDbClassification();
+
+    status = pluginFn.registerNode(
+        bMeshVisualizationNode::GetTypeName(),
+        bMeshVisualizationNode::GetTypeId(),
+        bMeshVisualizationNode::Creator,
+        bMeshVisualizationNode::Initialize,
+        bMeshVisualizationNode::kLocatorNode,
+        &drawDbClassification);
+    if (!status) {
+        MGlobal::displayError("Failed to register node: " + bMeshVisualizationNode::GetTypeName());
+        return (status);
+    }
+
+    status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
+        drawDbClassification,
+        bMeshVisualizationNode::GetDrawRegistrationId(),
+        bMeshVisualizationDrawOverride::Creator);
+    if (!status) {
+        MGlobal::displayError("Failed to register node: bMeshVisualizationDrawOverride.");
         return (status);
     }
 
@@ -316,7 +342,6 @@ MStatus uninitializePlugin(MObject pluginObj) {
 		MGlobal::displayError("Failed to deregister context command: " + SimpleContextCommand::GetCommandName());
 		return(status);
     }
-    */
 
     // SIMPLE LOCATOR NODE & SIMPLE LOCATOR DRAW OVERRIDE
     status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(SimpleLocatorNode::GetDrawDbClassification(), SimpleLocatorNode::GetDrawRegistrationId());
@@ -330,6 +355,7 @@ MStatus uninitializePlugin(MObject pluginObj) {
         MGlobal::displayError("Failed to deregister node: " + SimpleLocatorNode::GetTypeName());
         return(status);
     }
+    */
 
     // BALLISTIC MATERIAL DATA
     status = pluginFn.deregisterData(bMaterialData::GetTypeId());
@@ -364,6 +390,19 @@ MStatus uninitializePlugin(MObject pluginObj) {
     if (!status) {
 		MGlobal::displayError("Failed to deregister data: " + bBodyData::GetTypeName());
 		return(status);
+    }
+
+    // BALLISTIC MESH VISUALIZATION NODE & BALLISTIC MESH VISUALIZATION DRAW OVERRIDE
+    status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(bMeshVisualizationNode::GetDrawDbClassification(), SimpleLocatorNode::GetDrawRegistrationId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister node: bMeshVisualizationDrawOverride.");
+        return(status);
+    }
+
+    status = pluginFn.deregisterNode(bMeshVisualizationNode::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister node: " + bMeshVisualizationNode::GetTypeName());
+        return(status);
     }
 
     return (status);

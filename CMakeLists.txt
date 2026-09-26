@@ -56,12 +56,18 @@ set(HEADER_FILES
     "include/test-code/AttractDeformerNode.h"  
     "include/test-code/SimpleContext.h"
     "include/test-code/SimpleContextCommand.h" 
+    "include/test-code/SimpleLocatorNode.h" 
+    "include/test-code/SimpleLocatorDrawOverride.h" 
+    "include/test-code/SimpleLocatorUserData.h"  
     "include/bMaterial.h" 
     "include/bBodyData.h" 
     "include/bMaterialNode.h" 
     "include/bMaterialData.h" 
     "include/bMeshData.h" 
-    "include/bMesherNode.h" "include/SimpleLocatorNode.h" "include/SimpleLocatorDrawOverride.h" "include/SimpleLocatorUserData.h")
+    "include/bMesherNode.h" 
+    "include/bMeshVisualizationNode.h" 
+    "include/bMeshVisualizationData.h" 
+    "include/bMeshVisualizationDrawOverride.h")
 
 set(SOURCE_FILES
     "src/main.cpp"
@@ -76,11 +82,17 @@ set(SOURCE_FILES
     "src/test-code/AttractDeformerNode.cpp"
     "src/test-code/SimpleContext.cpp"
     "src/test-code/SimpleContextCommand.cpp" 
+    "src/test-code/SimpleLocatorNode.cpp" 
+    "src/test-code/SimpleLocatorDrawOverride.cpp" 
+    "src/test-code/SimpleLocatorUserData.cpp" 
     "src/bBodyData.cpp" 
     "src/bMaterialNode.cpp" 
     "src/bMaterialData.cpp" 
     "src/bMeshData.cpp" 
-    "src/bMesherNode.cpp" "src/SimpleLocatorNode.cpp" "src/SimpleLocatorDrawOverride.cpp" "src/SimpleLocatorUserData.cpp")
+    "src/bMesherNode.cpp" 
+    "src/bMeshVisualizationNode.cpp" 
+    "src/bMeshVisualizationData.cpp" 
+    "src/bMeshVisualizationDrawOverride.cpp")
 
 ###############
 # BUILDOWANIE #

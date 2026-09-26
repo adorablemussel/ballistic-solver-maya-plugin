@@ -5,13 +5,9 @@
 
 class SimpleLocatorUserData : public MUserData {
 public:
-	int shapeIndex;
-	MColor wireframeColor;
-
 	SimpleLocatorUserData(bool deleteAfterUse);
 	virtual ~SimpleLocatorUserData() override;
 
-
-private:
-
+	int shapeIndex;
+	MColor wireframeColor;
 };

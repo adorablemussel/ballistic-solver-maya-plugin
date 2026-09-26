@@ -10,6 +10,9 @@
 
 #include <gmsh.h>
 
+#include <vector>
+#include <unordered_map>
+
 //////////////////////
 // STATIC CONSTANTS //
 //////////////////////
@@ -119,9 +122,15 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 				std::vector<double> outCoords;
 				std::vector<double> parametricCoords;
 
-				gmsh::model::mesh::getNodes(outNodeTags, outCoords, parametricCoords, 3, volumeTag); // 3 = 3D (volume)
+				gmsh::model::mesh::getNodes(outNodeTags, outCoords, parametricCoords, -1, -1); // -1, -1 = wszystkie wierzcho³ki z ca³ej sceny
 
 				outData->vertices.assign(outCoords.begin(), outCoords.end()); // konwersja double na float wewn¹trz funkcji! (TO DO usuniêcie otrze¿enia)
+
+				// hashmapa: klucz: tag gmsha, wartoœæ: indeks w tablicy
+				std::unordered_map<std::size_t, int> tagToIndex;
+				for (size_t i = 0; i < outNodeTags.size(); i++) {
+					tagToIndex[outNodeTags[i]] = static_cast<int>(i);
+				}
 
 				std::vector<std::size_t> tetTags;
 				std::vector<std::size_t> tetNodeTags;
@@ -130,7 +139,7 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 
 				outData->tetrahedrons.resize(tetNodeTags.size());
 				for (size_t i = 0; i < tetNodeTags.size(); i++) { 
-					outData->tetrahedrons[i] = static_cast<int>(tetNodeTags[i] - 1);
+					outData->tetrahedrons[i] = tagToIndex[tetNodeTags[i]];
 				}
 
 
