@@ -45,7 +45,7 @@ MObject bMaterialNode::eos_C0Obj;
 MObject bMaterialNode::eos_SObj;
 MObject bMaterialNode::eos_Gamma0Obj;
 
-MObject bMaterialNode::materialObj;
+MObject bMaterialNode::outMaterialObj;
 
 ////////////////////
 // PUBLIC METHODS //
@@ -62,7 +62,7 @@ bMaterialNode::~bMaterialNode()
 
 MStatus bMaterialNode::compute(const MPlug& plug, MDataBlock& data)
 {
-    if (plug == materialObj)
+    if (plug == outMaterialObj)
     {
         MFnPluginData pluginDataFn;
         MObject newMaterialObject = pluginDataFn.create(bMaterialData::GetTypeId());
@@ -99,7 +99,7 @@ MStatus bMaterialNode::compute(const MPlug& plug, MDataBlock& data)
         outData->material.eos_S = data.inputValue(eos_SObj).asFloat();
         outData->material.eos_Gamma0 = data.inputValue(eos_Gamma0Obj).asFloat();
 
-        MDataHandle materialDataHandle = data.outputValue(materialObj);
+        MDataHandle materialDataHandle = data.outputValue(outMaterialObj);
         materialDataHandle.set(newMaterialObject);
 
         data.setClean(plug);
@@ -210,7 +210,7 @@ MStatus bMaterialNode::Initialize()
     numericAttr.setReadable(false);
 
     MFnTypedAttribute typedAttr;
-    materialObj = typedAttr.create("material", "mat", bMaterialData::GetTypeId());
+    outMaterialObj = typedAttr.create("outMaterial", "omat", bMaterialData::GetTypeId());
     typedAttr.setStorable(false);
     typedAttr.setWritable(false);
     typedAttr.setReadable(true);
@@ -253,30 +253,30 @@ MStatus bMaterialNode::Initialize()
     addAttribute(damageCompoundObj);
     addAttribute(thermalCompoundObj);
     addAttribute(eosCompoundObj);
-    addAttribute(materialObj);
+    addAttribute(outMaterialObj);
 
     // dodawanie odddzia³ywania
-    attributeAffects(densityObj, materialObj);
-    attributeAffects(youngModulusObj, materialObj);
-    attributeAffects(poissonRatioObj, materialObj);
-    attributeAffects(AObj, materialObj);
-    attributeAffects(BObj, materialObj);
-    attributeAffects(nObj, materialObj);
-    attributeAffects(CObj, materialObj);
-    attributeAffects(mObj, materialObj);
-    attributeAffects(D1Obj, materialObj);
-    attributeAffects(D2Obj, materialObj);
-    attributeAffects(D3Obj, materialObj);
-    attributeAffects(D4Obj, materialObj);
-    attributeAffects(D5Obj, materialObj);
-    attributeAffects(T_roomObj, materialObj);
-    attributeAffects(T_meltObj, materialObj);
-    attributeAffects(specificHeatObj, materialObj);
-    attributeAffects(eps_dot_0Obj, materialObj);
-    attributeAffects(taylorQuinneyObj, materialObj);
-    attributeAffects(eos_C0Obj, materialObj);
-    attributeAffects(eos_SObj, materialObj);
-    attributeAffects(eos_Gamma0Obj, materialObj);
+    attributeAffects(densityObj, outMaterialObj);
+    attributeAffects(youngModulusObj, outMaterialObj);
+    attributeAffects(poissonRatioObj, outMaterialObj);
+    attributeAffects(AObj, outMaterialObj);
+    attributeAffects(BObj, outMaterialObj);
+    attributeAffects(nObj, outMaterialObj);
+    attributeAffects(CObj, outMaterialObj);
+    attributeAffects(mObj, outMaterialObj);
+    attributeAffects(D1Obj, outMaterialObj);
+    attributeAffects(D2Obj, outMaterialObj);
+    attributeAffects(D3Obj, outMaterialObj);
+    attributeAffects(D4Obj, outMaterialObj);
+    attributeAffects(D5Obj, outMaterialObj);
+    attributeAffects(T_roomObj, outMaterialObj);
+    attributeAffects(T_meltObj, outMaterialObj);
+    attributeAffects(specificHeatObj, outMaterialObj);
+    attributeAffects(eps_dot_0Obj, outMaterialObj);
+    attributeAffects(taylorQuinneyObj, outMaterialObj);
+    attributeAffects(eos_C0Obj, outMaterialObj);
+    attributeAffects(eos_SObj, outMaterialObj);
+    attributeAffects(eos_Gamma0Obj, outMaterialObj);
 
     return (MS::kSuccess);
 }

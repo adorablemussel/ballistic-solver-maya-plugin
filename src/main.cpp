@@ -31,6 +31,7 @@
 #include "bBodyData.h"
 #include "bMeshVisualizationNode.h"
 #include "bMeshVisualizationDrawOverride.h"
+#include "bBodyNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -241,8 +242,20 @@ MStatus initializePlugin(MObject pluginObj) {
         return (status);
     }
 
+    // BALLISTIC BODY NODE
+    status = pluginFn.registerNode(
+        bBodyNode::GetTypeName(),
+        bBodyNode::GetTypeId(),
+        bBodyNode::Creator,
+        bBodyNode::Initialize,
+        bBodyNode::kDependNode);
+    if (!status) {
+        MGlobal::displayError("Failed to register node: " + bBodyNode::GetTypeName());
+        return (status);
+    }
+
     // BALLISTIC MESH VISUALIZATION NODE & BALLISTIC MESH VISUALIZATION DRAW OVERRIDE
-    MString drawDbClassification = bMeshVisualizationNode::GetDrawDbClassification();
+    MString drawDbVisClassification = bMeshVisualizationNode::GetDrawDbClassification();
 
     status = pluginFn.registerNode(
         bMeshVisualizationNode::GetTypeName(),
@@ -250,14 +263,14 @@ MStatus initializePlugin(MObject pluginObj) {
         bMeshVisualizationNode::Creator,
         bMeshVisualizationNode::Initialize,
         bMeshVisualizationNode::kLocatorNode,
-        &drawDbClassification);
+        &drawDbVisClassification);
     if (!status) {
         MGlobal::displayError("Failed to register node: " + bMeshVisualizationNode::GetTypeName());
         return (status);
     }
 
     status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
-        drawDbClassification,
+        drawDbVisClassification,
         bMeshVisualizationNode::GetDrawRegistrationId(),
         bMeshVisualizationDrawOverride::Creator);
     if (!status) {
@@ -392,8 +405,15 @@ MStatus uninitializePlugin(MObject pluginObj) {
 		return(status);
     }
 
+    // BALLISTIC BODY NODE
+    status = pluginFn.deregisterNode(bBodyNode::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister node: " + bBodyNode::GetTypeName());
+        return(status); 
+    }
+
     // BALLISTIC MESH VISUALIZATION NODE & BALLISTIC MESH VISUALIZATION DRAW OVERRIDE
-    status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(bMeshVisualizationNode::GetDrawDbClassification(), SimpleLocatorNode::GetDrawRegistrationId());
+    status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(bMeshVisualizationNode::GetDrawDbClassification(), bMeshVisualizationNode::GetDrawRegistrationId());
     if (!status) {
         MGlobal::displayError("Failed to deregister node: bMeshVisualizationDrawOverride.");
         return(status);
@@ -402,7 +422,7 @@ MStatus uninitializePlugin(MObject pluginObj) {
     status = pluginFn.deregisterNode(bMeshVisualizationNode::GetTypeId());
     if (!status) {
         MGlobal::displayError("Failed to deregister node: " + bMeshVisualizationNode::GetTypeName());
-        return(status);
+        return(status); 
     }
 
     return (status);

@@ -60,5 +60,5 @@ private:
 	static MObject eos_Gamma0Obj;
 
 // output attribute:
-	static MObject materialObj;
+	static MObject outMaterialObj;
 };
