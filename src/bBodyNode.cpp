@@ -8,6 +8,10 @@
 #include <maya/MString.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnNumericAttribute.h>
+#include <maya/MFnPluginData.h>
+#include <maya/MFloatVector.h>
+#include <array>
+#include <algorithm>
 
 //////////////////////
 // STATIC CONSTANTS //
@@ -35,8 +39,43 @@ bBodyNode::~bBodyNode()
 {
 }
 
-MStatus bBodyNode::compute(const MPlug&, MDataBlock&)
+MStatus bBodyNode::compute(const MPlug& plug, MDataBlock& data)
 {
+    if (plug == outBodyObj) {
+        // odczyt danych z customowych node'ów
+        bMeshData* inTetMeshData = dynamic_cast<bMeshData*>(data.inputValue(inTetMeshObj).asPluginData());
+        bMaterialData* inMaterialData = dynamic_cast<bMaterialData*>(data.inputValue(inMaterialObj).asPluginData());
+        if (!inTetMeshData || !inMaterialData) {
+            return (MS::kFailure);
+        }
+
+        MFnPluginData pluginDataFn;
+        MObject newBodyObject = pluginDataFn.create(bBodyData::GetTypeId());
+
+        MPxData* rawData = pluginDataFn.data();
+        bBodyData* outData = dynamic_cast<bBodyData*>(rawData);
+        if (!outData) {
+            return (MS::kFailure);
+        }
+
+        // odczyt z velocity
+        const float3& velocityData = data.inputValue(velocityObj).asFloat3();
+
+        // zapis
+        outData->vertices = inTetMeshData->vertices;
+        outData->tetrahedrons = inTetMeshData->tetrahedrons;
+        outData->material = inMaterialData->material;
+        outData->velocity = std::array<float, 3>{ velocityData[0], velocityData[1], velocityData[2] };
+    
+        MDataHandle bodyDataHandle = data.outputValue(outBodyObj);
+        bodyDataHandle.set(newBodyObject);
+
+        data.setClean(plug);
+    }
+    else {
+        return (MS::kUnknownParameter);
+    }
+
 	return (MS::kSuccess);
 }
 

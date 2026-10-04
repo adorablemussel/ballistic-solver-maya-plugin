@@ -106,7 +106,7 @@ MStatus bMaterialNode::compute(const MPlug& plug, MDataBlock& data)
     }
     else
     {
-        return (MS::kFailure);
+        return (MS::kUnknownParameter);
     }
 
     return (MS::kSuccess);
