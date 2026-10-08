@@ -32,6 +32,7 @@
 #include "bMeshVisualizationNode.h"
 #include "bMeshVisualizationDrawOverride.h"
 #include "bBodyNode.h"
+#include "bSolverNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
 
@@ -278,6 +279,17 @@ MStatus initializePlugin(MObject pluginObj) {
         return (status);
     }
 
+    // SOLVER NODE
+    status = pluginFn.registerNode(
+        bSolverNode::GetTypeName(),
+        bSolverNode::GetTypeId(),
+        bSolverNode::Creator,
+        bSolverNode::Initialize,
+        bSolverNode::kDependNode);
+    if (!status) {
+        MGlobal::displayError("Failed to register node: " + bSolverNode::GetTypeName());
+        return (status);
+    }
 
     return (status);
 }
@@ -423,6 +435,13 @@ MStatus uninitializePlugin(MObject pluginObj) {
     if (!status) {
         MGlobal::displayError("Failed to deregister node: " + bMeshVisualizationNode::GetTypeName());
         return(status); 
+    }
+
+    // SOLVER NODE
+    status = pluginFn.deregisterNode(bSolverNode::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister node: " + bSolverNode::GetTypeName());
+        return(status);
     }
 
     return (status);

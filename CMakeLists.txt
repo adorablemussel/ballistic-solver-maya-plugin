@@ -67,7 +67,9 @@ set(HEADER_FILES
     "include/bMesherNode.h" 
     "include/bMeshVisualizationNode.h" 
     "include/bMeshVisualizationData.h" 
-    "include/bMeshVisualizationDrawOverride.h" "include/bBodyNode.h")
+    "include/bMeshVisualizationDrawOverride.h" 
+    "include/bBodyNode.h" 
+    "include/bSolverNode.h")
 
 set(SOURCE_FILES
     "src/main.cpp"
@@ -92,7 +94,9 @@ set(SOURCE_FILES
     "src/bMesherNode.cpp" 
     "src/bMeshVisualizationNode.cpp" 
     "src/bMeshVisualizationData.cpp" 
-    "src/bMeshVisualizationDrawOverride.cpp" "src/bBodyNode.cpp")
+    "src/bMeshVisualizationDrawOverride.cpp" 
+    "src/bBodyNode.cpp" 
+    "src/bSolverNode.cpp")
 
 ###############
 # BUILDOWANIE #
