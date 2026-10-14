@@ -3,3 +3,16 @@
 The objective of this project is to develop and implement a plugin for Autodesk Maya that enables the simulation and visualization of dynamic deformations and damage in objects subjected to ballistic impacts. Unlike standard animation methods available in DCC (Digital Content Creation) environments, the developed solution will utilize the explicit finite element method (FEM) with the capability to model material damage and element deletion.
 As part of this work, a proprietary FEM solver will be developed for the analysis of dynamic mechanical phenomena, featuring GPU-accelerated computing parallelization using CUDA technology. The system will be integrated with the Gmsh library to generate volumetric finite element meshes based on object geometries created within Autodesk Maya. Furthermore, a user interface will be developed using the Qt 6 library, along with integration mechanisms for Autodesk Maya via the Maya API.
 The correctness of the solver's implementation will be verified against selected test cases by comparing the results with analytical solutions, reference data, or results obtained from commercially available FEM software. The capabilities of the developed solution will be demonstrated through the visualization of a selected ballistic impact scenario utilizing a model of the Borsuk infantry fighting vehicle.
+
+## Preview in Maya
+<p align="center">
+<img width="700" alt="nodes" src="https://github.com/user-attachments/assets/85d7a2ea-d42d-4559-a4d1-c45455997d1e" />
+<br>
+custom nodes with custom data types
+</p>
+
+<p align="center">
+<img width="720" height="540" alt="tetrahedrons" src="https://github.com/user-attachments/assets/e08b3750-8141-4329-a336-9454bc1812b1" />
+<br>
+viewport mesher visualization
+</p>
