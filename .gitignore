@@ -1,7 +1,10 @@
 /third-party/
 /dev/IFV-Borsuk/
 /out/
+/.vscode/
 *.stl
+*.fbx
+*.usd
 
 # other
 /out/
