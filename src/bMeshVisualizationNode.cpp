@@ -2,6 +2,7 @@
 #include "bMeshData.h"
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnPluginData.h>
+#include <maya/MViewport2Renderer.h>
 
 
 //////////////////////
@@ -62,6 +63,24 @@ MBoundingBox bMeshVisualizationNode::boundingBox() const
 	return (boundingBox);
 }
 
+MStatus bMeshVisualizationNode::compute(const MPlug& plug, MDataBlock& data)
+{
+	if (plug == localPosition || (plug.isChild() && plug.parent() == localPosition)) {
+		data.inputValue(inTetMeshObj);
+		data.setClean(plug);
+		return MS::kSuccess;
+	}
+	return MPxLocatorNode::compute(plug, data);
+}
+
+MStatus bMeshVisualizationNode::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray) 
+{
+	if (plug == inTetMeshObj) {
+		MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+	}
+	return MPxLocatorNode::setDependentsDirty(plug, plugArray);
+}
+
 ////////////////////
 // STATIC METHODS //
 ////////////////////
@@ -73,6 +92,7 @@ MStatus bMeshVisualizationNode::Initialize() {
 	typedAttr.setKeyable(false);
 
 	addAttribute(inTetMeshObj);
+	attributeAffects(inTetMeshObj, localPosition);
 
 	return (MS::kSuccess);
 }

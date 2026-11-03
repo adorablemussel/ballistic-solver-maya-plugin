@@ -44,21 +44,7 @@ find_package(Maya REQUIRED)
 # PLIKI PROJEKTU #
 ##################
 
-set(HEADER_FILES
-    "include/test-code/MyCallbacks.h"
-    "include/test-code/HelloWorldCommand.h"
-    "include/test-code/HelloWorldNode.h"
-    "include/test-code/HelloWorldDrawOverride.h"
-    "include/test-code/MultiplyNode.h"
-    "include/test-code/RollingNode.h"
-    "include/test-code/SimpleDeformerNode.h" 
-    "include/test-code/BlendDeformerNode.h" 
-    "include/test-code/AttractDeformerNode.h"  
-    "include/test-code/SimpleContext.h"
-    "include/test-code/SimpleContextCommand.h" 
-    "include/test-code/SimpleLocatorNode.h" 
-    "include/test-code/SimpleLocatorDrawOverride.h" 
-    "include/test-code/SimpleLocatorUserData.h"  
+set(HEADER_FILES 
     "include/bMaterial.h" 
     "include/bBodyData.h" 
     "include/bMaterialNode.h" 
@@ -69,24 +55,12 @@ set(HEADER_FILES
     "include/bMeshVisualizationData.h" 
     "include/bMeshVisualizationDrawOverride.h" 
     "include/bBodyNode.h" 
-    "include/bSolverNode.h")
+    "include/bSolverNode.h" 
+    "include/bSolverEngine.h" 
+    "include/bBodyState.h")
 
 set(SOURCE_FILES
     "src/main.cpp"
-    "src/test-code/MyCallbacks.cpp"
-    "src/test-code/HelloWorldCommand.cpp"
-    "src/test-code/HelloWorldNode.cpp" 
-    "src/test-code/HelloWorldDrawOverride.cpp"
-    "src/test-code/MultiplyNode.cpp"
-    "src/test-code/RollingNode.cpp"
-    "src/test-code/SimpleDeformerNode.cpp" 
-    "src/test-code/BlendDeformerNode.cpp" 
-    "src/test-code/AttractDeformerNode.cpp"
-    "src/test-code/SimpleContext.cpp"
-    "src/test-code/SimpleContextCommand.cpp" 
-    "src/test-code/SimpleLocatorNode.cpp" 
-    "src/test-code/SimpleLocatorDrawOverride.cpp" 
-    "src/test-code/SimpleLocatorUserData.cpp" 
     "src/bBodyData.cpp" 
     "src/bMaterialNode.cpp" 
     "src/bMaterialData.cpp" 
@@ -96,7 +70,8 @@ set(SOURCE_FILES
     "src/bMeshVisualizationData.cpp" 
     "src/bMeshVisualizationDrawOverride.cpp" 
     "src/bBodyNode.cpp" 
-    "src/bSolverNode.cpp")
+    "src/bSolverNode.cpp" 
+    "src/bSolverEngine.cpp")
 
 ###############
 # BUILDOWANIE #

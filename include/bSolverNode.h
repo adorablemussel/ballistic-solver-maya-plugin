@@ -1,6 +1,7 @@
 #pragma once
 
 #include <maya/MPxNode.h>
+#include "bSolverEngine.h"
 
 class bSolverNode : public MPxNode {
 public:
@@ -19,7 +20,13 @@ public:
 private:
 	static MObject inBodyObj;
 	static MObject inTimeObj;
+	static MObject substepsObj;
 
 	static MObject outTetMeshObj;
 	static MObject outMeshObj;
+
+	// instancja silnika
+	bSolverEngine solver;
+	double lastTimeSeconds = -1.0; //?
+	bool isInitialized = false;
 };

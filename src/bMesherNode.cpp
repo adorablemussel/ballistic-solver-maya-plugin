@@ -43,8 +43,11 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 	if (plug == outTetMeshObj) 
 	{
 		float elementSize = data.inputValue(elementSizeObj).asFloat();
-		MObject inputMesh = data.inputValue(inMeshObj).asMesh();
-		
+		MObject inputMesh = data.inputValue(inMeshObj).asMeshTransformed(); // od razu na miejscu oryginalnej siatki
+		if (inputMesh.isNull()) {
+			inputMesh = data.inputValue(inMeshObj).asMesh();
+		}
+
 		MFnPluginData pluginDataFn;
 		MObject newOutTetMeshObj = pluginDataFn.create(bMeshData::GetTypeId());
 
