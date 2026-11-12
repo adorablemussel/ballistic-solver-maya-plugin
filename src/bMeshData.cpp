@@ -31,6 +31,7 @@ void bMeshData::copy(const MPxData& src)
 	if (srcData) {
 		this->vertices = srcData->vertices;
 		this->tetrahedrons = srcData->tetrahedrons;
+		this->pinnedVertices = srcData->pinnedVertices;
 	}
 	else {
 		MGlobal::displayError("Failed to copy data to " + bMeshData::GetTypeName() + " data type");

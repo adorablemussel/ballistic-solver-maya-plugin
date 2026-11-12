@@ -18,13 +18,16 @@ struct bBodyState {
 
     //topologia i stan spoczynkowy czworoœcianów (z klatki startowej)
     std::vector<int> tetrahedrons;      // tetrahedrons * 4
-    std::vector<float> restVolumes;     // tetrahedrons
-    std::vector<float> restEdgeLengths; // tetrahedrons * 6
+    std::vector<float> restVolumes;     // tetrahedrons 
+    std::vector<float> restEdgeLengths; // tetrahedrons * 6 
 
     //zmienne stanu czworoœcianów (Plastycznoœæ, Termika, EOS, Erozja)
     std::vector<bool> isEroded;         // tetrahedrons
-    std::vector<float> temperatures;    // tetrahedrons
+    std::vector<float> temperatures;    // tetrahedrons 
     std::vector<float> plasticStrains;  // tetrahedrons
     std::vector<float> internalEnergies;// tetrahedrons
     std::vector<float> damageAccum;     // tetrahedrons
+
+    //przypiête wierzcho³ki
+    std::vector<int> pinnedVertices;
 };

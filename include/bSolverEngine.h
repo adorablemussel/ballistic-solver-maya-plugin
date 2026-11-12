@@ -18,16 +18,13 @@ public:
         const std::vector<int>& inTets,
         const std::array<float, 3>& initVel);
 
-    void extractSurfaceTriangles(size_t bodyIndex, std::vector<int>& outTriangleIndices) const;
-
-    void pinVerticesInBox(size_t bodyIndex, float minX, float maxX, float minY, float maxY, float minZ, float maxZ);
-
+    void pinVertices(size_t bodyIndex, const std::vector<int>& vertexIndices);
+    
     void step(float frameDt, int substeps, float damping = 0.999f);
 
+    void extractSurfaceTriangles(size_t bodyIndex, std::vector<int>& outTriangleIndices) const;
+    
     const std::vector<bBodyState>& getBodies() const { return bodies; }
-    size_t getErodedCount(size_t bodyIndex) const;
-    float getMaxTemperature(size_t bodyIndex) const;
-    float getMaxPlasticStrain(size_t bodyIndex) const;
 
 private:
     std::vector<bBodyState> bodies;
@@ -37,7 +34,7 @@ private:
 
     void clearAndApplyExternalForces(bBodyState& body);
     void computeInternalForces(bBodyState& body, float dt);
-    void handleBodyCollisions();
+    void handleBodyCollisions(float dt);
     void evaluateErosion(bBodyState& body);
     void integrate(bBodyState& body, float dt, float damping);
     void handleGroundCollision(bBodyState& body, float groundY = 0.0f);

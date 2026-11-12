@@ -7,6 +7,7 @@ class bMeshData : public MPxData {
 public:
 	std::vector<float> vertices; // [x1, y1, z1, x2, y2, z2, x3, ...] - co trzy wspó³rzêdne jest nowy wêze³
 	std::vector<int> tetrahedrons; // [[v1, v2, v3, v4], [v2, v3, v5, v6], [...]] - co cztery wêz³y jest nowy tet
+	std::vector<int> pinnedVertices;
 
 	bMeshData();
 	virtual ~bMeshData() override;

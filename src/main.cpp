@@ -1,28 +1,11 @@
+#include <filesystem>
+#include <string>
+
+#include <maya/MCommonSystemUtils.h>
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnPlugin.h>
-#include <maya/MPxCommand.h>
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
-
-#include <gmsh.h>
-
-#include <vector>
-#include <string>
-#include <exception>
-
-#include "MyCallbacks.h"
-#include "HelloWorldCommand.h"
-#include "HelloWorldDrawOverride.h"
-#include "HelloWorldNode.h"
-#include "MultiplyNode.h"
-#include "RollingNode.h"
-#include "SimpleDeformerNode.h"
-#include "BlendDeformerNode.h"
-#include "AttractDeformerNode.h"
-#include "SimpleContext.h"
-#include "SimpleContextCommand.h"
-#include "SimpleLocatorNode.h"
-#include "SimpleLocatorDrawOverride.h"
 
 #include "bMaterialData.h"
 #include "bMaterialNode.h"
@@ -35,24 +18,27 @@
 #include "bSolverNode.h"
 
 MStatus initializePlugin(MObject pluginObj) {
-
     const char* vendor = "Szymon Krzysztofik";
 #ifndef _DEBUG
     const char* version = "1.0.0";
 #else
     const char* version = "1.0.0 DEBUG";
 #endif
-    const char* requiredApiVersion = "Any"; 
+    const char* requiredApiVersion = "Any";
 
     MStatus status;
-
-	MFnPlugin pluginFn(pluginObj, vendor, version, requiredApiVersion, &status);
+    MFnPlugin pluginFn(pluginObj, vendor, version, requiredApiVersion, &status);
     if (!status) {
         MGlobal::displayError("Failed to initialize plugin: " + status.errorString());
-        return(status);
-    }
-
-    // BALLISITC MATERIAL DATA
+        return status;
+    } 
+     
+    // automatyczne dodanie folderu wtyczki (z natywnymi ukoœnikami \) do zmiennej PATH
+    std::string pluginDir = std::filesystem::path(pluginFn.loadPath().asChar()).make_preferred().string();
+    MString currentPath = MCommonSystemUtils::getEnv("PATH");
+    MCommonSystemUtils::putEnv("PATH", MString(pluginDir.c_str()) + ";" + currentPath);
+     
+    // MATERIAL DATA
     status = pluginFn.registerData(
         bMaterialData::GetTypeName(),
         bMaterialData::GetTypeId(),
@@ -60,22 +46,10 @@ MStatus initializePlugin(MObject pluginObj) {
         bMaterialData::kData);
     if (!status) {
         MGlobal::displayError("Failed to register data: " + bMaterialData::GetTypeName());
-        return (status); 
-    } 
-     
-	// BALLISTIC MATERIAL NODE
-	status = pluginFn.registerNode(
-		bMaterialNode::GetTypeName(),
-		bMaterialNode::GetTypeId(),
-		bMaterialNode::Creator,
-		bMaterialNode::Initialize,
-		bMaterialNode::kDependNode);
-	if (!status) {
-		MGlobal::displayError("Failed to register node: " + bMaterialNode::GetTypeName());
-		return (status);
-	}
+        return status;
+    }
 
-    // BALLISTIC MESH DATA
+    // MESH DATA
     status = pluginFn.registerData(
         bMeshData::GetTypeName(),
         bMeshData::GetTypeId(),
@@ -83,10 +57,33 @@ MStatus initializePlugin(MObject pluginObj) {
         bMeshData::kData);
     if (!status) {
         MGlobal::displayError("Failed to register data: " + bMeshData::GetTypeName());
-        return (status);
+        return status;
     }
 
-    // BALLISTIC MESHER NODE
+    // BODY DATA
+    status = pluginFn.registerData(
+        bBodyData::GetTypeName(),
+        bBodyData::GetTypeId(),
+        bBodyData::Creator,
+        bBodyData::kData);
+    if (!status) {
+        MGlobal::displayError("Failed to register data: " + bBodyData::GetTypeName());
+        return status;
+    }
+
+    // MATERIAL NODE
+    status = pluginFn.registerNode(
+        bMaterialNode::GetTypeName(),
+        bMaterialNode::GetTypeId(),
+        bMaterialNode::Creator,
+        bMaterialNode::Initialize,
+        bMaterialNode::kDependNode);
+    if (!status) {
+        MGlobal::displayError("Failed to register node: " + bMaterialNode::GetTypeName());
+        return status;
+    }
+
+    // MESHER NODE
     status = pluginFn.registerNode(
         bMesherNode::GetTypeName(),
         bMesherNode::GetTypeId(),
@@ -95,21 +92,10 @@ MStatus initializePlugin(MObject pluginObj) {
         bMesherNode::kDependNode);
     if (!status) {
         MGlobal::displayError("Failed to register node: " + bMesherNode::GetTypeName());
-        return (status);
+        return status;
     }
 
-    // BALLISTIC BODY DATA
-    status = pluginFn.registerData(
-        bBodyData::GetTypeName(),
-        bBodyData::GetTypeId(),
-        bBodyData::Creator,
-        bBodyData::kData); 
-	if (!status) {
-		MGlobal::displayError("Failed to register data: " + bBodyData::GetTypeName());
-        return (status);
-    }
-
-    // BALLISTIC BODY NODE
+    // BODY NODE
     status = pluginFn.registerNode(
         bBodyNode::GetTypeName(),
         bBodyNode::GetTypeId(),
@@ -118,12 +104,11 @@ MStatus initializePlugin(MObject pluginObj) {
         bBodyNode::kDependNode);
     if (!status) {
         MGlobal::displayError("Failed to register node: " + bBodyNode::GetTypeName());
-        return (status);
+        return status;
     }
 
-    // BALLISTIC MESH VISUALIZATION NODE & BALLISTIC MESH VISUALIZATION DRAW OVERRIDE
+    // MESH VISUALIZATION NODE & DRAW OVERRIDE
     MString drawDbVisClassification = bMeshVisualizationNode::GetDrawDbClassification();
-
     status = pluginFn.registerNode(
         bMeshVisualizationNode::GetTypeName(),
         bMeshVisualizationNode::GetTypeId(),
@@ -133,7 +118,7 @@ MStatus initializePlugin(MObject pluginObj) {
         &drawDbVisClassification);
     if (!status) {
         MGlobal::displayError("Failed to register node: " + bMeshVisualizationNode::GetTypeName());
-        return (status);
+        return status;
     }
 
     status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
@@ -142,9 +127,9 @@ MStatus initializePlugin(MObject pluginObj) {
         bMeshVisualizationDrawOverride::Creator);
     if (!status) {
         MGlobal::displayError("Failed to register node: bMeshVisualizationDrawOverride.");
-        return (status);
+        return status;
     }
-        
+
     // SOLVER NODE
     status = pluginFn.registerNode(
         bSolverNode::GetTypeName(),
@@ -154,78 +139,71 @@ MStatus initializePlugin(MObject pluginObj) {
         bSolverNode::kDependNode);
     if (!status) {
         MGlobal::displayError("Failed to register node: " + bSolverNode::GetTypeName());
-        return (status);
+        return status;
     }
 
-    return (status);
+    return status;
 }
 
 MStatus uninitializePlugin(MObject pluginObj) {
     MStatus status;
-
     MFnPlugin pluginFn(pluginObj);
 
-    // BALLISTIC MATERIAL DATA
-    status = pluginFn.deregisterData(bMaterialData::GetTypeId());
-    if (!status) {
-        MGlobal::displayError("Failed to deregister data: " + bMaterialData::GetTypeName());
-        return(status);
-    }
-
-	// BALLISTIC MATERIAL NODE
-	status = pluginFn.deregisterNode(bMaterialNode::GetTypeId());
-	if (!status) {
-		MGlobal::displayError("Failed to deregister node: " + bMaterialNode::GetTypeName());
-		return(status);
-	}
-
-    // BALLISTIC MESH DATA
-    status = pluginFn.deregisterData(bMeshData::GetTypeId());
-    if (!status) {
-        MGlobal::displayError("Failed to deregister data: " + bMeshData::GetTypeName());
-        return(status);
-    }
-
-    // BALLISTIC MESHER NODE
-    status = pluginFn.deregisterNode(bMesherNode::GetTypeId());
-    if (!status) {
-        MGlobal::displayError("Failed to deregister node: " + bMesherNode::GetTypeName());
-        return(status);
-    }
-
-    // BALLISTIC BODY DATA
-    status = pluginFn.deregisterData(bBodyData::GetTypeId());
-    if (!status) {
-		MGlobal::displayError("Failed to deregister data: " + bBodyData::GetTypeName());
-		return(status);
-    }
-
-    // BALLISTIC BODY NODE
-    status = pluginFn.deregisterNode(bBodyNode::GetTypeId());
-    if (!status) {
-        MGlobal::displayError("Failed to deregister node: " + bBodyNode::GetTypeName());
-        return(status); 
-    }
-
-    // BALLISTIC MESH VISUALIZATION NODE & BALLISTIC MESH VISUALIZATION DRAW OVERRIDE
-    status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(bMeshVisualizationNode::GetDrawDbClassification(), bMeshVisualizationNode::GetDrawRegistrationId());
+    status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
+        bMeshVisualizationNode::GetDrawDbClassification(),
+        bMeshVisualizationNode::GetDrawRegistrationId());
     if (!status) {
         MGlobal::displayError("Failed to deregister node: bMeshVisualizationDrawOverride.");
-        return(status);
+        return status;
     }
 
     status = pluginFn.deregisterNode(bMeshVisualizationNode::GetTypeId());
     if (!status) {
         MGlobal::displayError("Failed to deregister node: " + bMeshVisualizationNode::GetTypeName());
-        return(status); 
+        return status;
     }
 
-    // SOLVER NODE
     status = pluginFn.deregisterNode(bSolverNode::GetTypeId());
     if (!status) {
         MGlobal::displayError("Failed to deregister node: " + bSolverNode::GetTypeName());
-        return(status);
+        return status;
     }
 
-    return (status);
+    status = pluginFn.deregisterNode(bBodyNode::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister node: " + bBodyNode::GetTypeName());
+        return status;
+    }
+
+    status = pluginFn.deregisterNode(bMesherNode::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister node: " + bMesherNode::GetTypeName());
+        return status;
+    }
+
+    status = pluginFn.deregisterNode(bMaterialNode::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister node: " + bMaterialNode::GetTypeName());
+        return status;
+    }
+
+    status = pluginFn.deregisterData(bBodyData::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister data: " + bBodyData::GetTypeName());
+        return status;
+    }
+
+    status = pluginFn.deregisterData(bMeshData::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister data: " + bMeshData::GetTypeName());
+        return status;
+    }
+
+    status = pluginFn.deregisterData(bMaterialData::GetTypeId());
+    if (!status) {
+        MGlobal::displayError("Failed to deregister data: " + bMaterialData::GetTypeName());
+        return status;
+    }
+
+    return status;
 }

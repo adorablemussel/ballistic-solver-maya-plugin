@@ -2,17 +2,11 @@
 # KONFIGURACJA PROJEKTU #
 #########################
 
-# minimalna wersja Cmake
 cmake_minimum_required(VERSION 3.27)
-
-# nazwa projektu i użytych języków (cpp i cuda)
 project(BallisticSolver LANGUAGES CXX CUDA)
 
-# cuda jest samodzielnie wykrywana przez CMake - nie potrzebne jest podawanie ścieżki
-# ustawienie architektury CUDA na 8.6 (dla kart Ampere, w tym mojej karty RTX3060)
 set(CMAKE_CUDA_ARCHITECTURES 86)
 
-# wymuszenie standardów (cpp 17 i cuda 17 dla Mayi 2026)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 17)
@@ -21,11 +15,11 @@ set(CMAKE_CUDA_STANDARD 17)
 # ŚCIEŻKI #
 ###########
 
-# definicje ścieżek
 set(THIRD_PARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third-party")
 set(MAYA_DEVKIT_BASE_DIR "${THIRD_PARTY_DIR}/MayaDevkitBase2026")
 set(MAYA_PLUGINS_DIR "C:/Users/Szymon/Documents/maya/2026/plug-ins")
-if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo" OR CMAKE_BUILD_TYPE STREQUAL "Release") # RelWithDebInfo i Release mają to samo ABI
+
+if (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo" OR CMAKE_BUILD_TYPE STREQUAL "Release")
     set(GMSH_SDK_DIR "${THIRD_PARTY_DIR}/GmshSDK-Release")
 elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(GMSH_SDK_DIR "${THIRD_PARTY_DIR}/GmshSDK-Debug")
@@ -35,7 +29,6 @@ endif ()
 # ŚRODOWISKO MAYI #
 ###################
 
-# pakiety Mayi
 list(APPEND CMAKE_MODULE_PATH "${MAYA_DEVKIT_BASE_DIR}/cmake/modules")
 set(MAYA_LOCATION "${MAYA_DEVKIT_BASE_DIR}")
 find_package(Maya REQUIRED)
@@ -77,13 +70,11 @@ set(SOURCE_FILES
 # BUILDOWANIE #
 ###############
 
-# budowanie pluginu
 add_library(${PROJECT_NAME} SHARED
     ${SOURCE_FILES}
     ${HEADER_FILES}
 )
 
-# zmiana rozszerzenia z domyślnego .dll na .mll
 set_target_properties(${PROJECT_NAME} PROPERTIES 
     PREFIX "" 
     SUFFIX ".mll"
@@ -93,13 +84,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # LINKOWANIE #
 ##############
 
-# nagłówki projektu
 target_include_directories(${PROJECT_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/test-code"
 )
 
-# nagłówki i biblioteki Mayi
 target_include_directories(${PROJECT_NAME} PRIVATE "${MAYA_DEVKIT_BASE_DIR}/include")
 target_link_directories(${PROJECT_NAME} PRIVATE "${MAYA_DEVKIT_BASE_DIR}/lib")
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -108,43 +96,38 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenMayaRender.lib
     OpenMayaUI.lib
     OpenMayaAnim.lib
+    delayimp.lib
 )
 
-# nagłówki i biblioteki Gmsh
 target_include_directories(${PROJECT_NAME} PRIVATE "${GMSH_SDK_DIR}/include")
 target_link_libraries(${PROJECT_NAME} PRIVATE "${GMSH_SDK_DIR}/lib/gmsh.dll.lib")
+
+target_link_options(${PROJECT_NAME} PRIVATE "/DELAYLOAD:gmsh.dll")
 
 #################
 # AUTOMATYZACJA #
 #################
 
-# target: wyładowanie pluginu w Mayi (przed kompilacją)
 add_custom_target(unload_plugin
     COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/dev/unload_plugin_via_port.py"
     VERBATIM
 )
 
-# zależność odłączenia pluginu zawsze przed kompilacją
 add_dependencies(${PROJECT_NAME} unload_plugin)
 
-# kopiowanie gmsh.dll i wczytanie ponownie pluginu w Mayi
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    # kopiowanie biblioteki Gmsh obok pluginu w lokalnym build folderze projektu
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${GMSH_SDK_DIR}/lib/gmsh.dll"
     $<TARGET_FILE_DIR:${PROJECT_NAME}>
 
-    # kopiowanie pliku .mll do folderu z pluginami Mayi
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<TARGET_FILE:${PROJECT_NAME}>
     "${MAYA_PLUGINS_DIR}"
 
-    # kopiowanie biblioteki Gmsh obok pluginu w folderze z pluginami Mayi
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${GMSH_SDK_DIR}/lib/gmsh.dll"
     "${MAYA_PLUGINS_DIR}"
 
-    # załadowanie z powrotem skompilowanej wtyczki do Mayi
     COMMAND python "${CMAKE_CURRENT_SOURCE_DIR}/dev/load_plugin_via_port.py"
     VERBATIM
 )

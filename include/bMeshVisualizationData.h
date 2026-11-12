@@ -9,4 +9,5 @@ public:
 	virtual ~bMeshVisualizationData() override;
 
 	MPointArray wireframeLines;
+	MPointArray pinnedPoints;
 };

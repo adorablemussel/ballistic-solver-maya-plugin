@@ -8,6 +8,7 @@ public:
 	virtual ~bMesherNode() override;
 
 	virtual MStatus compute(const MPlug& plug, MDataBlock& data) override;
+	virtual SchedulingType schedulingType() const override;
 
 // static methods:
 	static MStatus Initialize();

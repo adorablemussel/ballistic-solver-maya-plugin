@@ -10,6 +10,9 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MFloatVector.h>
+#include <maya/MFnIntArrayData.h>
+#include <maya/MIntArray.h>
+
 #include <array>
 #include <algorithm>
 
@@ -25,6 +28,7 @@ static const MString TYPE_NAME = MString("bBodyNode");
 MObject bBodyNode::inTetMeshObj;
 MObject bBodyNode::inMaterialObj;
 MObject bBodyNode::velocityObj;
+MObject bBodyNode::pinnedVerticesObj;
 
 MObject bBodyNode::outBodyObj;
 
@@ -66,6 +70,17 @@ MStatus bBodyNode::compute(const MPlug& plug, MDataBlock& data)
         outData->tetrahedrons = inTetMeshData->tetrahedrons;
         outData->material = inMaterialData->material;
         outData->velocity = std::array<float, 3>{ velocityData[0], velocityData[1], velocityData[2] };
+        
+        outData->pinnedVertices.clear();
+        MObject pinArrayObj = data.inputValue(pinnedVerticesObj).data();
+        if (!pinArrayObj.isNull()) {
+            MFnIntArrayData intArrayFn(pinArrayObj);
+            MIntArray mayaIndices = intArrayFn.array();
+            outData->pinnedVertices.resize(mayaIndices.length());
+            for (unsigned int i = 0; i < mayaIndices.length(); ++i) {
+                outData->pinnedVertices[i] = mayaIndices[i];
+            }
+        }
     
         MDataHandle bodyDataHandle = data.outputValue(outBodyObj);
         bodyDataHandle.set(newBodyObject);
@@ -101,6 +116,11 @@ MStatus bBodyNode::Initialize() {
     numericAttr.setKeyable(true);
     numericAttr.setWritable(true);
 
+    pinnedVerticesObj = typedAttr.create("pinnedVertices", "pinv", MFnData::kIntArray);
+    typedAttr.setStorable(true);
+    typedAttr.setKeyable(false);
+    typedAttr.setWritable(true);
+
     outBodyObj = typedAttr.create("outBody", "ob", bBodyData::GetTypeId());
     typedAttr.setStorable(false);
     typedAttr.setWritable(false);
@@ -108,11 +128,13 @@ MStatus bBodyNode::Initialize() {
     addAttribute(inTetMeshObj);
     addAttribute(inMaterialObj);
     addAttribute(velocityObj);
+    addAttribute(pinnedVerticesObj);
     addAttribute(outBodyObj);
 
     attributeAffects(inTetMeshObj, outBodyObj);
     attributeAffects(inMaterialObj, outBodyObj);
     attributeAffects(velocityObj, outBodyObj);
+    attributeAffects(pinnedVerticesObj, outBodyObj);
     
 
     return (MS::kSuccess);

@@ -20,8 +20,8 @@ private:
 // input objects:
 	static MObject inTetMeshObj;
 	static MObject inMaterialObj;
-	
 	static MObject velocityObj;
+	static MObject pinnedVerticesObj;
 
 // output objects:
 	static MObject outBodyObj;

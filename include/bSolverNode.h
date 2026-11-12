@@ -9,6 +9,8 @@ public:
 	virtual ~bSolverNode() override;
 
 	virtual MStatus compute(const MPlug& plug, MDataBlock& data) override;
+	virtual SchedulingType schedulingType() const override;
+	virtual MStatus setDependentsDirty(const MPlug& plug, MPlugArray& plugArray) override;
 
 // static methods:
 	static void* Creator();
@@ -27,6 +29,6 @@ private:
 
 	// instancja silnika
 	bSolverEngine solver;
-	double lastTimeSeconds = -1.0; //?
+	int lastSimulatedFrame = -1;
 	bool isInitialized = false;
 };

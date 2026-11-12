@@ -2,7 +2,6 @@
 #include <cmath>
 #include <map>
 #include <algorithm>
-#include <iostream>
 
 void bSolverEngine::clearBodies() {
     bodies.clear();
@@ -58,8 +57,6 @@ void bSolverEngine::extractSurfaceTriangles(size_t bodyIndex, std::vector<int>& 
         int count;
     };
 
-    // klucz: posortowane indeksy 3 wierzcho³ków œciany
-    // wartoœæ: oryginalna kolejnoœæ wierzcho³ków (zgodna z normaln¹ na zewn¹trz) oraz licznik wyst¹pieñ
     std::map<std::array<int, 3>, OrientedFace> faceMap;
 
     const int tetFaces[4][3] = {
@@ -100,42 +97,20 @@ void bSolverEngine::extractSurfaceTriangles(size_t bodyIndex, std::vector<int>& 
     }
 }
 
-void bSolverEngine::pinVerticesInBox(size_t bodyIndex, float minX, float maxX, float minY, float maxY, float minZ, float maxZ) {
+void bSolverEngine::pinVertices(size_t bodyIndex, const std::vector<int>& vertexIndices) {
     if (bodyIndex >= bodies.size()) return;
     bBodyState& body = bodies[bodyIndex];
-    size_t numVertices = body.positions.size() / 3;
+    body.pinnedVertices = vertexIndices;
+    size_t numVertices = body.masses.size();
 
-    for (size_t i = 0; i < numVertices; ++i) {
-        float x = body.positions[i * 3 + 0];
-        float y = body.positions[i * 3 + 1];
-        float z = body.positions[i * 3 + 2];
-
-        if (x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ) {
-            body.masses[i] = 0.0f;
-            body.velocities[i * 3 + 0] = 0.0f;
-            body.velocities[i * 3 + 1] = 0.0f;
-            body.velocities[i * 3 + 2] = 0.0f;
+    for (int idx : vertexIndices) {
+        if (idx >= 0 && static_cast<size_t>(idx) < numVertices) {
+            body.masses[idx] = 0.0f;
+            body.velocities[idx * 3 + 0] = 0.0f;
+            body.velocities[idx * 3 + 1] = 0.0f;
+            body.velocities[idx * 3 + 2] = 0.0f;
         }
     }
-}
-
-size_t bSolverEngine::getErodedCount(size_t bodyIndex) const {
-    if (bodyIndex >= bodies.size()) return 0;
-    size_t count = 0;
-    for (bool eroded : bodies[bodyIndex].isEroded) {
-        if (eroded) ++count;
-    }
-    return count;
-}
-
-float bSolverEngine::getMaxTemperature(size_t bodyIndex) const {
-    if (bodyIndex >= bodies.size() || bodies[bodyIndex].temperatures.empty()) return 0.0f;
-    return *std::max_element(bodies[bodyIndex].temperatures.begin(), bodies[bodyIndex].temperatures.end());
-}
-
-float bSolverEngine::getMaxPlasticStrain(size_t bodyIndex) const {
-    if (bodyIndex >= bodies.size() || bodies[bodyIndex].plasticStrains.empty()) return 0.0f;
-    return *std::max_element(bodies[bodyIndex].plasticStrains.begin(), bodies[bodyIndex].plasticStrains.end());
 }
 
 float bSolverEngine::computeSignedTetVolume(const float* p0, const float* p1, const float* p2, const float* p3) const {
@@ -222,7 +197,7 @@ void bSolverEngine::step(float frameDt, int substeps, float damping) {
             computeInternalForces(body, dt);
         }
 
-        handleBodyCollisions();
+        handleBodyCollisions(dt);
 
         for (auto& body : bodies) {
             evaluateErosion(body);
@@ -266,6 +241,11 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
         float V0 = body.restVolumes[t];
         if (V0 <= 1e-12f) continue;
 
+        // wk³ad masowy tego czworoœcianu do ka¿dego z jego 4 wierzcho³ków
+        float tetNodeMass = 0.25f * rho0 * V0;
+        // maksymalna stabilna sztywnoœæ dla tego czworoœcianu (warunek CFL Eulera)
+        float maxStableK = (dt > 1e-7f) ? (0.12f * tetNodeMass / (dt * dt)) : 1e30f;
+
         float T = body.temperatures[t];
         float T_star = std::clamp((T - T_room) / (T_melt - T_room), 0.0f, 0.999f);
         float m_exp = (mat.m > 0.0f) ? mat.m : 1.0f;
@@ -293,29 +273,31 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
                             -(gradV1[1] + gradV2[1] + gradV3[1]),
                             -(gradV1[2] + gradV2[2] + gradV3[2]) };
 
-        float currentV = e1[0] * gradV1[0] + e1[1] * gradV1[1] + e1[2] * gradV1[2];
-        float safeV = std::max(currentV, 0.2f * V0);
-        float mu = (V0 / safeV) - 1.0f;
+        float maxGradSq = 1e-16f;
+        const float* grads[4] = { gradV0, gradV1, gradV2, gradV3 };
+        for (int g = 0; g < 4; ++g) {
+            float gSq = grads[g][0] * grads[g][0] + grads[g][1] * grads[g][1] + grads[g][2] * grads[g][2];
+            maxGradSq = std::max(maxGradSq, gSq);
+        }
 
-        float pressure = 0.0f; 
-        if (mat.eos_C0 > 0.0f) {
-            float c0 = mat.eos_C0;
+        float maxStableBulkModulus = maxStableK * V0 / maxGradSq;
+
+        float currentV = e1[0] * gradV1[0] + e1[1] * gradV1[1] + e1[2] * gradV1[2];
+        float safeV = std::max(currentV, 0.35f * V0);
+        float mu = std::clamp((V0 / safeV) - 1.0f, -0.5f, 1.5f);
+
+        float pressure = 0.0f;
+        if (mat.eos_C0 > 0.0f && mu > 0.0f) {
+            float K_eos = std::min(rho0 * mat.eos_C0 * mat.eos_C0, maxStableBulkModulus);
             float s = mat.eos_S;
             float gamma0 = mat.eos_Gamma0;
-            float U = body.internalEnergies[t];
-
-            if (mu > 0.0f) {
-                float denom = std::max(1.0f - (s - 1.0f) * mu, 0.25f);
-                float p_hugoniot = (rho0 * c0 * c0 * mu * (1.0f + (1.0f - 0.5f * gamma0) * mu)) / (denom * denom);
-                pressure = p_hugoniot + gamma0 * rho0 * U;
-            }
-            else {
-                pressure = rho0 * c0 * c0 * mu + gamma0 * rho0 * U;
-            }
+            float denom = std::max(1.0f - (s - 1.0f) * mu, 0.35f);
+            pressure = (K_eos * mu * (1.0f + (1.0f - 0.5f * gamma0) * mu)) / (denom * denom);
         }
         else {
-            float volStrain = (currentV - V0) / V0;
-            pressure = -K_linear * thermalFactor * volStrain;
+            float K_eff = std::min(K_linear * thermalFactor, maxStableBulkModulus);
+            float volStrain = std::clamp((currentV - V0) / V0, -0.5f, 0.5f);
+            pressure = -K_eff * volStrain;
         }
 
         for (int d = 0; d < 3; ++d) {
@@ -382,7 +364,7 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
                         maxTetPlasticInc = plasticStrainInc;
                     }
 
-                    float plasticWorkPerVol = yieldStress * plasticStrainInc;
+                    float plasticWorkPerVol = yieldStress * (plasticStrainInc / 6.0f);
                     body.internalEnergies[t] += plasticWorkPerVol / rho0;
                     body.temperatures[t] += (beta_TQ * plasticWorkPerVol) / (rho0 * Cp);
                 }
@@ -390,8 +372,8 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
 
             maxTrialStress = std::max(maxTrialStress, trialStress);
 
-            float k_edge = E_eff * V0 / (restLength * restLength);
-            float c_edge = 0.1f * std::sqrt(k_edge * V0 * rho0);
+            float k_edge = std::min(E_eff * V0 / (restLength * restLength), maxStableK);
+            float c_edge = 0.1f * std::sqrt(k_edge * tetNodeMass);
 
             float springForce = k_edge * deltaL;
             float totalForce = springForce + relVel * c_edge;
@@ -422,10 +404,9 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
             }
         }
     }
-    (void)dt;
 }
 
-void bSolverEngine::handleBodyCollisions() {
+void bSolverEngine::handleBodyCollisions(float dt) {
     if (bodies.size() < 2) return;
 
     for (size_t a = 0; a < bodies.size(); ++a) {
@@ -433,96 +414,70 @@ void bSolverEngine::handleBodyCollisions() {
             bBodyState& bodyA = bodies[a];
             bBodyState& bodyB = bodies[b];
 
+            size_t numVA = bodyA.positions.size() / 3;
+            size_t numVB = bodyB.positions.size() / 3;
+
             float EA = (bodyA.material.youngModulus > 0.0f) ? bodyA.material.youngModulus : 500000.0f;
             float EB = (bodyB.material.youngModulus > 0.0f) ? bodyB.material.youngModulus : 500000.0f;
             float E_eff = 0.5f * (EA + EB);
 
-            auto collideTetsWithVertices = [&](bBodyState& tetBody, bBodyState& vertBody) {
-                size_t numTets = tetBody.tetrahedrons.size() / 4;
-                size_t numVerts = vertBody.positions.size() / 3;
+            for (size_t i = 0; i < numVA; ++i) {
+                if (!bodyA.isVertexActive[i]) continue;
 
-                for (size_t t = 0; t < numTets; ++t) {
-                    if (tetBody.isEroded[t]) continue;
+                const float* pA = &bodyA.positions[i * 3];
+                const float* vA = &bodyA.velocities[i * 3];
+                float rA = bodyA.contactRadii[i];
 
-                    int i0 = tetBody.tetrahedrons[t * 4 + 0];
-                    int i1 = tetBody.tetrahedrons[t * 4 + 1];
-                    int i2 = tetBody.tetrahedrons[t * 4 + 2];
-                    int i3 = tetBody.tetrahedrons[t * 4 + 3];
+                for (size_t j = 0; j < numVB; ++j) {
+                    if (!bodyB.isVertexActive[j]) continue;
 
-                    float cX = 0.25f * (tetBody.positions[i0 * 3 + 0] + tetBody.positions[i1 * 3 + 0] + tetBody.positions[i2 * 3 + 0] + tetBody.positions[i3 * 3 + 0]);
-                    float cY = 0.25f * (tetBody.positions[i0 * 3 + 1] + tetBody.positions[i1 * 3 + 1] + tetBody.positions[i2 * 3 + 1] + tetBody.positions[i3 * 3 + 1]);
-                    float cZ = 0.25f * (tetBody.positions[i0 * 3 + 2] + tetBody.positions[i1 * 3 + 2] + tetBody.positions[i2 * 3 + 2] + tetBody.positions[i3 * 3 + 2]);
+                    const float* pB = &bodyB.positions[j * 3];
+                    const float* vB = &bodyB.velocities[j * 3];
+                    float rB = bodyB.contactRadii[j];
 
-                    float rTet = 0.65f * std::cbrt(tetBody.restVolumes[t]);
+                    float minDist = 1.3f * (rA + rB);
+                    float dx = pB[0] - pA[0];
+                    if (std::abs(dx) >= minDist) continue;
+                    float dy = pB[1] - pA[1];
+                    if (std::abs(dy) >= minDist) continue;
+                    float dz = pB[2] - pA[2];
+                    if (std::abs(dz) >= minDist) continue;
 
-                    for (size_t j = 0; j < numVerts; ++j) {
-                        if (!vertBody.isVertexActive[j]) continue;
+                    float distSq = dx * dx + dy * dy + dz * dz;
+                    if (distSq < minDist * minDist && distSq > 1e-12f) {
+                        float dist = std::sqrt(distSq);
+                        float overlap = minDist - dist;
 
-                        float* pV = &vertBody.positions[j * 3];
-                        float* vV = &vertBody.velocities[j * 3];
-                        float rV = vertBody.contactRadii[j];
+                        float nx = dx / dist;
+                        float ny = dy / dist;
+                        float nz = dz / dist;
 
-                        float minDist = rTet + rV;
-                        float dx = pV[0] - cX;
-                        if (std::abs(dx) >= minDist) continue;
-                        float dy = pV[1] - cY;
-                        if (std::abs(dy) >= minDist) continue;
-                        float dz = pV[2] - cZ;
-                        if (std::abs(dz) >= minDist) continue;
+                        float mA = (bodyA.masses[i] > 1e-8f) ? bodyA.masses[i] : 1e30f;
+                        float mB = (bodyB.masses[j] > 1e-8f) ? bodyB.masses[j] : 1e30f;
+                        float minMass = std::min(mA, mB);
 
-                        float distSq = dx * dx + dy * dy + dz * dz;
-                        if (distSq < minDist * minDist && distSq > 1e-12f) {
-                            float dist = std::sqrt(distSq);
-                            float overlap = minDist - dist;
-
-                            float nx = dx / dist;
-                            float ny = dy / dist;
-                            float nz = dz / dist;
-
-                            float k_contact = E_eff * minDist;
-                            float forceMag = k_contact * overlap;
-
-                            int tetIdxs[4] = { i0, i1, i2, i3 };
-                            for (int k = 0; k < 4; ++k) {
-                                int idx = tetIdxs[k];
-                                tetBody.forces[idx * 3 + 0] -= 0.25f * forceMag * nx;
-                                tetBody.forces[idx * 3 + 1] -= 0.25f * forceMag * ny;
-                                tetBody.forces[idx * 3 + 2] -= 0.25f * forceMag * nz;
-                            }
-
-                            vertBody.forces[j * 3 + 0] += forceMag * nx;
-                            vertBody.forces[j * 3 + 1] += forceMag * ny;
-                            vertBody.forces[j * 3 + 2] += forceMag * nz;
-
-                            float pushTet = 0.5f * overlap;
-                            float pushVert = 0.5f * overlap;
-
-                            for (int k = 0; k < 4; ++k) {
-                                int idx = tetIdxs[k];
-                                if (tetBody.masses[idx] > 1e-8f) {
-                                    tetBody.positions[idx * 3 + 0] -= 0.25f * pushTet * nx;
-                                    tetBody.positions[idx * 3 + 1] -= 0.25f * pushTet * ny;
-                                    tetBody.positions[idx * 3 + 2] -= 0.25f * pushTet * nz;
-                                }
-                            }
-                            if (vertBody.masses[j] > 1e-8f) {
-                                pV[0] += pushVert * nx;
-                                pV[1] += pushVert * ny;
-                                pV[2] += pushVert * nz;
-                                float vn = vV[0] * nx + vV[1] * ny + vV[2] * nz;
-                                if (vn < 0.0f) {
-                                    vV[0] -= 0.5f * vn * nx;
-                                    vV[1] -= 0.5f * vn * ny;
-                                    vV[2] -= 0.5f * vn * nz;
-                                }
-                            }
+                        float k_contact = 0.5f * E_eff * minDist;
+                        if (minMass < 1e20f && dt > 1e-7f) {
+                            k_contact = std::min(k_contact, 0.05f * minMass / (dt * dt));
                         }
+
+                        float forceMag = k_contact * overlap;
+
+                        float relVel = (vB[0] - vA[0]) * nx + (vB[1] - vA[1]) * ny + (vB[2] - vA[2]) * nz;
+                        if (relVel < 0.0f && minMass < 1e20f) {
+                            forceMag -= 0.25f * relVel * std::sqrt(k_contact * minMass);
+                        }
+
+                        bodyA.forces[i * 3 + 0] -= forceMag * nx;
+                        bodyA.forces[i * 3 + 1] -= forceMag * ny;
+                        bodyA.forces[i * 3 + 2] -= forceMag * nz;
+
+                        bodyB.forces[j * 3 + 0] += forceMag * nx;
+                        bodyB.forces[j * 3 + 1] += forceMag * ny;
+                        bodyB.forces[j * 3 + 2] += forceMag * nz;
                     }
                 }
-                };
-
-            collideTetsWithVertices(bodyA, bodyB);
-            collideTetsWithVertices(bodyB, bodyA);
+            }
         }
     }
 }
@@ -552,7 +507,7 @@ void bSolverEngine::evaluateErosion(bBodyState& body) {
             &body.positions[i1 * 3],
             &body.positions[i2 * 3],
             &body.positions[i3 * 3]);
-        if (currentV < 0.25f * body.restVolumes[t]) {
+        if (currentV < 0.2f * body.restVolumes[t]) {
             body.isEroded[t] = true;
             anyNewErosion = true;
             continue;
@@ -593,8 +548,10 @@ void bSolverEngine::evaluateErosion(bBodyState& body) {
         }
     }
 }
+
 void bSolverEngine::integrate(bBodyState& body, float dt, float damping) {
     size_t numVertices = body.positions.size() / 3;
+    const float maxVel = 200.0f;
 
     for (size_t i = 0; i < numVertices; ++i) {
         if (!body.isVertexActive[i]) continue;
@@ -603,9 +560,13 @@ void bSolverEngine::integrate(bBodyState& body, float dt, float damping) {
 
         float invMass = 1.0f / mass;
 
-        body.velocities[i * 3 + 0] = (body.velocities[i * 3 + 0] + body.forces[i * 3 + 0] * invMass * dt) * damping;
-        body.velocities[i * 3 + 1] = (body.velocities[i * 3 + 1] + body.forces[i * 3 + 1] * invMass * dt) * damping;
-        body.velocities[i * 3 + 2] = (body.velocities[i * 3 + 2] + body.forces[i * 3 + 2] * invMass * dt) * damping;
+        float vx = (body.velocities[i * 3 + 0] + body.forces[i * 3 + 0] * invMass * dt) * damping;
+        float vy = (body.velocities[i * 3 + 1] + body.forces[i * 3 + 1] * invMass * dt) * damping;
+        float vz = (body.velocities[i * 3 + 2] + body.forces[i * 3 + 2] * invMass * dt) * damping;
+
+        body.velocities[i * 3 + 0] = std::clamp(vx, -maxVel, maxVel);
+        body.velocities[i * 3 + 1] = std::clamp(vy, -maxVel, maxVel);
+        body.velocities[i * 3 + 2] = std::clamp(vz, -maxVel, maxVel);
 
         body.positions[i * 3 + 0] += body.velocities[i * 3 + 0] * dt;
         body.positions[i * 3 + 1] += body.velocities[i * 3 + 1] * dt;

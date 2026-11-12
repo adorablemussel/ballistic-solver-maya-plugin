@@ -31,6 +31,7 @@ MUserData* bMeshVisualizationDrawOverride::prepareForDraw(const MDagPath& objPat
 	}
 
 	data->wireframeLines.clear();
+	data->pinnedPoints.clear();
 
 	MObject thisNode = objPath.node();
 	MPlug meshPlug(thisNode, bMeshVisualizationNode::inTetMeshObj);
@@ -80,6 +81,17 @@ MUserData* bMeshVisualizationDrawOverride::prepareForDraw(const MDagPath& objPat
 			data->wireframeLines.append(D);
 
 		}
+		// zbieranie pozycji zpinowanych wierzcho³ków
+		size_t numVerts = meshData->vertices.size() / 3;
+		for (int pinIdx : meshData->pinnedVertices) {
+			if (pinIdx >= 0 && static_cast<size_t>(pinIdx) < numVerts) {
+				data->pinnedPoints.append(MPoint(
+					meshData->vertices[pinIdx * 3 + 0],
+					meshData->vertices[pinIdx * 3 + 1],
+					meshData->vertices[pinIdx * 3 + 2]
+				));
+			}
+		}
 	}
 	return data;
 }
@@ -87,19 +99,27 @@ MUserData* bMeshVisualizationDrawOverride::prepareForDraw(const MDagPath& objPat
 void bMeshVisualizationDrawOverride::addUIDrawables(const MDagPath& objPath, MHWRender::MUIDrawManager& drawManager, const MHWRender::MFrameContext& frameContext, const MUserData* data)
 {
 	bMeshVisualizationData* visData = (bMeshVisualizationData*)data;
-	if (!visData || visData->wireframeLines.length() == 0) {
+	if (!visData) {
 		return;
 	}
 
 	drawManager.beginDrawable();
 
-	drawManager.setColor(MColor(1.0f, 1.0f, 1.0f));
-	drawManager.setLineWidth(1.0f);
+	// wizualizacja tetmesh na bia³o
+	if (visData->wireframeLines.length() > 0) {
+		drawManager.setColor(MColor(1.0f, 1.0f, 1.0f));
+		drawManager.setLineWidth(1.0f);
+		drawManager.lineList(visData->wireframeLines, false);
+	}
 
-	drawManager.lineList(visData->wireframeLines, false);
-
+	// zpinowane wierzcho³ki na czerwono
+	if (visData->pinnedPoints.length() > 0) {
+		drawManager.setColor(MColor(1.0f, 0.15f, 0.10f));
+		drawManager.setPointSize(8.0f);
+		drawManager.points(visData->pinnedPoints, false);
+	}
 	drawManager.endDrawable();
-
+	 
 }
 
 ////////////////////

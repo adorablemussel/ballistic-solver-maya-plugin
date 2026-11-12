@@ -40,6 +40,7 @@ void bBodyData::copy(const MPxData& src)
 		this->vertices = srcData->vertices;
 		this->tetrahedrons = srcData->tetrahedrons;
 		this->velocity = srcData->velocity;
+		this->pinnedVertices = srcData->pinnedVertices;
 	}
 	else {
 		MGlobal::displayError("Failed to copy data to " + bBodyData::GetTypeName()  + " data type");

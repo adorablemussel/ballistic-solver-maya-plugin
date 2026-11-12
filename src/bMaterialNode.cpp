@@ -124,91 +124,116 @@ void* bMaterialNode::Creator()
 MStatus bMaterialNode::Initialize()
 {
     // tworzenie atrybutów
+    // sprê¿ystoœæ
     MFnNumericAttribute numericAttr;
-    densityObj = numericAttr.create("density", "dens", MFnNumericData::kFloat, 0.0);
+    densityObj = numericAttr.create("density", "dens", MFnNumericData::kFloat, 2700.0f); // kg/m^3
+    numericAttr.setMin(1.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    youngModulusObj = numericAttr.create("YoungModulus", "Young", MFnNumericData::kFloat, 0.0);
+    youngModulusObj = numericAttr.create("YoungModulus", "Young", MFnNumericData::kFloat, 2500000.0f); // Pa
+    numericAttr.setMin(100.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    poissonRatioObj = numericAttr.create("PoissonRatio", "Poisson", MFnNumericData::kFloat, 0.0);
+    poissonRatioObj = numericAttr.create("PoissonRatio", "Poisson", MFnNumericData::kFloat, 0.3f);
+    numericAttr.setMin(0.0f);
+    numericAttr.setMax(0.49f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    AObj = numericAttr.create("A", "A", MFnNumericData::kFloat, 0.0);
+    // plastycznoœæ
+    AObj = numericAttr.create("A", "A", MFnNumericData::kFloat, 70000.0f); // Pa
+    numericAttr.setMin(0.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    BObj = numericAttr.create("B", "B", MFnNumericData::kFloat, 0.0);
+    BObj = numericAttr.create("B", "B", MFnNumericData::kFloat, 110000.0f); // Pa
+    numericAttr.setMin(0.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    nObj = numericAttr.create("n", "n", MFnNumericData::kFloat, 0.0);
+    nObj = numericAttr.create("n", "n", MFnNumericData::kFloat, 0.35f);
+    numericAttr.setMin(0.01f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    CObj = numericAttr.create("C", "C", MFnNumericData::kFloat, 0.0);
+    CObj = numericAttr.create("C", "C", MFnNumericData::kFloat, 0.02f);
+    numericAttr.setMin(0.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    mObj = numericAttr.create("m", "m", MFnNumericData::kFloat, 0.0);
+    mObj = numericAttr.create("m", "m", MFnNumericData::kFloat, 1.0f);
+    numericAttr.setMin(0.01f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    D1Obj = numericAttr.create("D1", "D1", MFnNumericData::kFloat, 0.0);
+    // zniszczenie
+    D1Obj = numericAttr.create("D1", "D1", MFnNumericData::kFloat, 0.15f); // %
+    numericAttr.setMin(0.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    D2Obj = numericAttr.create("D2", "D2", MFnNumericData::kFloat, 0.0);
+    D2Obj = numericAttr.create("D2", "D2", MFnNumericData::kFloat, 0.05f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    D3Obj = numericAttr.create("D3", "D3", MFnNumericData::kFloat, 0.0);
+    D3Obj = numericAttr.create("D3", "D3", MFnNumericData::kFloat, -1.5f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    D4Obj = numericAttr.create("D4", "D4", MFnNumericData::kFloat, 0.0);
+    D4Obj = numericAttr.create("D4", "D4", MFnNumericData::kFloat, 0.01f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    D5Obj = numericAttr.create("D5", "D5", MFnNumericData::kFloat, 0.0);
+    D5Obj = numericAttr.create("D5", "D5", MFnNumericData::kFloat, 0.5f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    T_roomObj = numericAttr.create("roomTemperature", "T_room", MFnNumericData::kFloat, 0.0);
+    // termomechanika
+    T_roomObj = numericAttr.create("roomTemperature", "T_room", MFnNumericData::kFloat, 293.15f); // Kelvin
+    numericAttr.setMin(0.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    T_meltObj = numericAttr.create("meltTemperature", "T_melt", MFnNumericData::kFloat, 0.0);
+    T_meltObj = numericAttr.create("meltTemperature", "T_melt", MFnNumericData::kFloat, 933.0f); // Kelvin
+    numericAttr.setMin(1.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    specificHeatObj = numericAttr.create("specificHeat", "specHeat", MFnNumericData::kFloat, 0.0);
+    specificHeatObj = numericAttr.create("specificHeat", "specHeat", MFnNumericData::kFloat, 470.0f); // J/(kg*K)
+    numericAttr.setMin(0.1f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    eps_dot_0Obj = numericAttr.create("referenceStrainRate", "refStrain", MFnNumericData::kFloat, 0.0);
+    eps_dot_0Obj = numericAttr.create("referenceStrainRate", "refStrain", MFnNumericData::kFloat, 1.0f); // 1/s
+    numericAttr.setMin(1e-6f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    taylorQuinneyObj = numericAttr.create("TaylorQuinney", "Quinney", MFnNumericData::kFloat, 0.0);
+    taylorQuinneyObj = numericAttr.create("TaylorQuinney", "Quinney", MFnNumericData::kFloat, 0.9f); // %
+    numericAttr.setMin(0.0f);
+    numericAttr.setMax(1.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    eos_C0Obj = numericAttr.create("referenceSoundSpeed", "refSound", MFnNumericData::kFloat, 0.0);
+    // hydrodynamika
+    eos_C0Obj = numericAttr.create("referenceSoundSpeed", "refSound", MFnNumericData::kFloat, 30.0f); // m/s
+    numericAttr.setMin(0.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    eos_SObj = numericAttr.create("curveSlope", "slope", MFnNumericData::kFloat, 0.0);
+    eos_SObj = numericAttr.create("curveSlope", "slope", MFnNumericData::kFloat, 1.4f);
+    numericAttr.setMin(0.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
-    eos_Gamma0Obj = numericAttr.create("initialGruneisenGamma", "gamma", MFnNumericData::kFloat, 0.0);
+    eos_Gamma0Obj = numericAttr.create("initialGruneisenGamma", "gamma", MFnNumericData::kFloat, 1.8f);
+    numericAttr.setMin(0.0f);
     numericAttr.setKeyable(true);
     numericAttr.setReadable(false);
 
+    // output
     MFnTypedAttribute typedAttr;
     outMaterialObj = typedAttr.create("outMaterial", "omat", bMaterialData::GetTypeId());
     typedAttr.setStorable(false);

@@ -1,6 +1,7 @@
 #include "bMesherNode.h"
 #include "bMeshData.h"
 
+#include <maya/MPxNode.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
@@ -10,6 +11,7 @@
 
 #include <gmsh.h>
 
+#include <mutex>
 #include <vector>
 #include <unordered_map>
 
@@ -43,7 +45,7 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 	if (plug == outTetMeshObj) 
 	{
 		float elementSize = data.inputValue(elementSizeObj).asFloat();
-		MObject inputMesh = data.inputValue(inMeshObj).asMeshTransformed(); // od razu na miejscu oryginalnej siatki
+		MObject inputMesh = data.inputValue(inMeshObj).asMeshTransformed(); // od razu na wspó³rzêdnych oryginalnej siatki
 		if (inputMesh.isNull()) {
 			inputMesh = data.inputValue(inMeshObj).asMesh();
 		}
@@ -51,8 +53,7 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 		MFnPluginData pluginDataFn;
 		MObject newOutTetMeshObj = pluginDataFn.create(bMeshData::GetTypeId());
 
-		MPxData* rawData = pluginDataFn.data();
-		bMeshData* outData = dynamic_cast<bMeshData*>(rawData);
+		bMeshData* outData = dynamic_cast<bMeshData*>(pluginDataFn.data());
 
 		if (!outData) {
 			return (MS::kFailure);
@@ -68,8 +69,11 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 			MIntArray triangleVertices; // z których wierzcho³ków jest tworzony dany trójk¹t
 			meshFn.getTriangles(triangleCounts, triangleVertices); // pobranie trójk¹tów (powierzchni obiektu)
 		
+			static std::mutex g_gmshMutex;
+			std::lock_guard<std::mutex> lock(g_gmshMutex);
 			try {
 				gmsh::initialize();
+				gmsh::option::setNumber("General.Terminal", 0);
 				gmsh::model::add("BallisticMesher");
 
 				gmsh::option::setNumber("Mesh.MeshSizeMax", elementSize);
@@ -77,78 +81,84 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 
 				// rejestracja powierzchni obiektu
 				int surfaceTag = 1;
-				gmsh::model::addDiscreteEntity(2, surfaceTag); // 2 = wymiar 2D
+				gmsh::model::addDiscreteEntity(2, surfaceTag);
 
-				// t³umaczenie punktów z mayi do gmsh
-				std::vector<std::size_t> nodeTags(mayaPoints.length());
-				std::vector<double> nodeCoords(mayaPoints.length() * 3);
+				std::size_t numSurfaceVerts = mayaPoints.length();
+				std::vector<std::size_t> nodeTags(numSurfaceVerts);
+				std::vector<double> nodeCoords(numSurfaceVerts * 3);
 
-				for (std::size_t i = 0; i < mayaPoints.length(); i++) {
-					nodeTags[i] = i + 1; // GMSH TU INDEKSUJE OD 1!!
+				for (std::size_t i = 0; i < numSurfaceVerts; i++) {
+					nodeTags[i] = i + 1;
 					nodeCoords[i * 3 + 0] = mayaPoints[i].x;
 					nodeCoords[i * 3 + 1] = mayaPoints[i].y;
 					nodeCoords[i * 3 + 2] = mayaPoints[i].z;
 				}
 
 				gmsh::model::mesh::addNodes(2, surfaceTag, nodeTags, nodeCoords);
-				
-				// t³uamczenie trójk¹tów z mayi do gmsh
-				std::vector<int> elementTypes = { 2 }; // 2 = trójk¹t z 3 wierzcho³kami
+
+				std::vector<int> elementTypes = { 2 };
 				std::vector<std::vector<std::size_t>> elementTags(1);
 				std::vector<std::vector<std::size_t>> elementNodeTags(1);
 
 				std::size_t numTriangles = triangleVertices.length() / 3;
-				
 				elementTags[0].resize(numTriangles);
 				elementNodeTags[0].resize(triangleVertices.length());
 
 				for (std::size_t i = 0; i < numTriangles; i++) {
-					elementTags[0][i] = i + 1; // TUTAJ TE¯ GMSH INDEKSUJE OD 1!!
-					
+					elementTags[0][i] = i + 1;
 					elementNodeTags[0][i * 3 + 0] = triangleVertices[i * 3 + 0] + 1;
 					elementNodeTags[0][i * 3 + 1] = triangleVertices[i * 3 + 1] + 1;
 					elementNodeTags[0][i * 3 + 2] = triangleVertices[i * 3 + 2] + 1;
 				}
 
-				gmsh::model::mesh::addElements(2, surfaceTag, elementTypes, elementTags, elementNodeTags); // 2 = 3-wêz³owy trójk¹t
+				gmsh::model::mesh::addElements(2, surfaceTag, elementTypes, elementTags, elementNodeTags);
 
-				// wype³nienie wnêtrza
 				int volumeTag = 1;
 				gmsh::model::geo::addSurfaceLoop(std::vector<int>{surfaceTag}, volumeTag);
 				gmsh::model::geo::addVolume(std::vector<int>{volumeTag}, volumeTag);
 				gmsh::model::geo::synchronize();
 
-				gmsh::model::mesh::generate(3); // 3 = 3D
+				gmsh::model::mesh::generate(3);
 
-				// wyci¹gniêcie danych z powrotem do mayi
 				std::vector<std::size_t> outNodeTags;
 				std::vector<double> outCoords;
 				std::vector<double> parametricCoords;
 
-				gmsh::model::mesh::getNodes(outNodeTags, outCoords, parametricCoords, -1, -1); // -1, -1 = wszystkie wierzcho³ki z ca³ej sceny
+				gmsh::model::mesh::getNodes(outNodeTags, outCoords, parametricCoords, -1, -1);
 
-				outData->vertices.assign(outCoords.begin(), outCoords.end()); // konwersja double na float wewn¹trz funkcji! (TO DO usuniêcie otrze¿enia)
+				std::size_t internalCount = 0;
+				for (std::size_t tag : outNodeTags) {
+					if (tag < 1 || tag > numSurfaceVerts) {
+						internalCount++;
+					}
+				}
 
-				// hashmapa: klucz: tag gmsha, wartoœæ: indeks w tablicy
+				outData->vertices.resize((numSurfaceVerts + internalCount) * 3, 0.0f);
 				std::unordered_map<std::size_t, int> tagToIndex;
+				tagToIndex.reserve(outNodeTags.size());
+
+				int nextInternalIndex = static_cast<int>(numSurfaceVerts);
 				for (size_t i = 0; i < outNodeTags.size(); i++) {
-					tagToIndex[outNodeTags[i]] = static_cast<int>(i);
+					std::size_t tag = outNodeTags[i];
+					int targetIdx = (tag >= 1 && tag <= numSurfaceVerts) ? static_cast<int>(tag - 1) : nextInternalIndex++;
+
+					tagToIndex[tag] = targetIdx;
+					outData->vertices[targetIdx * 3 + 0] = static_cast<float>(outCoords[i * 3 + 0]);
+					outData->vertices[targetIdx * 3 + 1] = static_cast<float>(outCoords[i * 3 + 1]);
+					outData->vertices[targetIdx * 3 + 2] = static_cast<float>(outCoords[i * 3 + 2]);
 				}
 
 				std::vector<std::size_t> tetTags;
 				std::vector<std::size_t> tetNodeTags;
-
-				gmsh::model::mesh::getElementsByType(4, tetTags, tetNodeTags, volumeTag); // 4 = czworoœcian
+				gmsh::model::mesh::getElementsByType(4, tetTags, tetNodeTags, volumeTag);
 
 				outData->tetrahedrons.resize(tetNodeTags.size());
-				for (size_t i = 0; i < tetNodeTags.size(); i++) { 
+				for (size_t i = 0; i < tetNodeTags.size(); i++) {
 					outData->tetrahedrons[i] = tagToIndex[tetNodeTags[i]];
 				}
 
-
 				gmsh::clear();
 				gmsh::finalize();
-
 				MGlobal::displayInfo("Gmsh: meshing completed.");
 			}
 			catch (std::exception& e) {
@@ -169,6 +179,11 @@ MStatus bMesherNode::compute(const MPlug& plug, MDataBlock& data)
 	}
 
 	return (MS::kSuccess);
+}
+
+MPxNode::SchedulingType bMesherNode::schedulingType() const
+{
+	return MPxNode::kGloballySerialize;
 }
 
 ////////////////////

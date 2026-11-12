@@ -13,6 +13,7 @@ public:
 	std::vector<float> vertices;
 	std::vector<int> tetrahedrons;
 	std::array<float, 3> velocity;
+	std::vector<int> pinnedVertices;
 
 	bBodyData();
 	virtual ~bBodyData() override;
