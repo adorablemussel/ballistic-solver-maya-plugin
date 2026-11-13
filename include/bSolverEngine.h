@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <array>
-#include <string>
 #include "bMaterial.h"
 #include "bBodyState.h"
 
@@ -24,11 +23,11 @@ public:
         const std::array<float, 3>& initVel);
 
     void pinVertices(size_t bodyIndex, const std::vector<int>& vertexIndices);
-    
+
     void step(float frameDt, int substeps, bComputeBackend backend = bComputeBackend::CPU_Single, float damping = 0.999f);
 
     void extractSurfaceTriangles(size_t bodyIndex, std::vector<int>& outTriangleIndices) const;
-    
+
     const std::vector<bBodyState>& getBodies() const { return bodies; }
 
 private:
@@ -37,10 +36,10 @@ private:
     void precomputeRestState(bBodyState& body);
     float computeSignedTetVolume(const float* p0, const float* p1, const float* p2, const float* p3) const;
 
-    void clearAndApplyExternalForces(bBodyState& body);
-    void computeInternalForces(bBodyState& body, float dt);
-    void handleBodyCollisions(float dt);
-    void evaluateErosion(bBodyState& body);
-    void integrate(bBodyState& body, float dt, float damping);
-    void handleGroundCollision(bBodyState& body, float groundY = 0.0f);
+    void clearAndApplyExternalForces(bBodyState& body, bool useOpenMP);
+    void computeInternalForces(bBodyState& body, float dt, bool useOpenMP);
+    void handleBodyCollisions(float dt, bool useOpenMP);
+    void evaluateErosion(bBodyState& body, bool useOpenMP);
+    void integrate(bBodyState& body, float dt, float damping, bool useOpenMP);
+    void handleGroundCollision(bBodyState& body, float groundY, bool useOpenMP);
 };

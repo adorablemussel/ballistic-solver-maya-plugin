@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
 #include "bMaterial.h"
 
 //bie¿¹cy stan dynamiczny i termomechaniczny cia³a wewn¹trz solvera (nadpisuje siê co klatkê)
@@ -14,7 +15,7 @@ struct bBodyState {
     std::vector<float> forces;          // vertices * 3
     std::vector<float> masses;          // vertices
     std::vector<float> contactRadii;    // vertices
-    std::vector<bool> isVertexActive;   // vertices
+    std::vector<uint8_t> isVertexActive;// vertices (uint8_t jako bool dla bezpieczeñstwa w¹tków)
 
     //topologia i stan spoczynkowy czworoœcianów (z klatki startowej)
     std::vector<int> tetrahedrons;      // tetrahedrons * 4
@@ -22,7 +23,7 @@ struct bBodyState {
     std::vector<float> restEdgeLengths; // tetrahedrons * 6 
 
     //zmienne stanu czworoœcianów (Plastycznoœæ, Termika, EOS, Erozja)
-    std::vector<bool> isEroded;         // tetrahedrons
+    std::vector<uint8_t> isEroded;      // tetrahedrons (uint8_t jako bool dla bezpieczeñstwa w¹tków)
     std::vector<float> temperatures;    // tetrahedrons 
     std::vector<float> plasticStrains;  // tetrahedrons
     std::vector<float> internalEnergies;// tetrahedrons

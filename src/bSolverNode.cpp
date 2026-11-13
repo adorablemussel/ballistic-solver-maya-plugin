@@ -93,7 +93,7 @@ MStatus bSolverNode::compute(const MPlug& plug, MDataBlock& data) {
 
         int framesToStep = std::min(currentFrame - lastSimulatedFrame, 5);
         for (int f = 0; f < framesToStep; ++f) {
-            solver.step(frameDt, substeps);
+            solver.step(frameDt, substeps, backend);
         }
         lastSimulatedFrame = currentFrame;
     }

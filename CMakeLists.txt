@@ -25,13 +25,14 @@ elseif (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(GMSH_SDK_DIR "${THIRD_PARTY_DIR}/GmshSDK-Debug")
 endif ()
 
-###################
-# ŚRODOWISKO MAYI #
-###################
+############################
+# ŚRODOWISKO MAYI I OPENMP #
+############################
 
 list(APPEND CMAKE_MODULE_PATH "${MAYA_DEVKIT_BASE_DIR}/cmake/modules")
 set(MAYA_LOCATION "${MAYA_DEVKIT_BASE_DIR}")
 find_package(Maya REQUIRED)
+find_package(OpenMP REQUIRED)
 
 ##################
 # PLIKI PROJEKTU #
@@ -97,6 +98,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenMayaUI.lib
     OpenMayaAnim.lib
     delayimp.lib
+    OpenMP::OpenMP_CXX
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE "${GMSH_SDK_DIR}/include")

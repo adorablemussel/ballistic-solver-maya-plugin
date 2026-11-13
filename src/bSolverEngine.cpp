@@ -2,6 +2,7 @@
 #include <cmath>
 #include <map>
 #include <algorithm>
+#include <omp.h>
 
 void bSolverEngine::clearBodies() {
     bodies.clear();
@@ -24,7 +25,7 @@ void bSolverEngine::addBody(const bMaterial& mat,
     body.forces.resize(numVertices * 3, 0.0f);
     body.masses.resize(numVertices, 0.0f);
     body.contactRadii.resize(numVertices, 0.0f);
-    body.isVertexActive.resize(numVertices, true);
+    body.isVertexActive.resize(numVertices, 1);
 
     for (size_t i = 0; i < numVertices; ++i) {
         body.velocities[i * 3 + 0] = initVel[0];
@@ -33,7 +34,7 @@ void bSolverEngine::addBody(const bMaterial& mat,
     }
 
     body.restVolumes.resize(numTets, 0.0f);
-    body.isEroded.resize(numTets, false);
+    body.isEroded.resize(numTets, 0);
 
     float initTemp = (mat.T_room > 0.0f) ? mat.T_room : 293.15f;
     body.temperatures.resize(numTets, initTemp);
@@ -191,35 +192,39 @@ void bSolverEngine::step(float frameDt, int substeps, bComputeBackend backend, f
     if (substeps <= 0) substeps = 1;
     float dt = frameDt / static_cast<float>(substeps);
 
+    // W kolejnym kroku podepniemy tutaj wywo³anie stepCUDA() dla bComputeBackend::GPU_CUDA
+    bool useOpenMP = (backend == bComputeBackend::CPU_OpenMP);
+
     for (int s = 0; s < substeps; ++s) {
         for (auto& body : bodies) {
-            clearAndApplyExternalForces(body);
-            computeInternalForces(body, dt);
+            clearAndApplyExternalForces(body, useOpenMP);
+            computeInternalForces(body, dt, useOpenMP);
         }
 
-        handleBodyCollisions(dt);
+        handleBodyCollisions(dt, useOpenMP);
 
         for (auto& body : bodies) {
-            evaluateErosion(body);
-            integrate(body, dt, damping);
-            handleGroundCollision(body, 0.0f);
+            evaluateErosion(body, useOpenMP);
+            integrate(body, dt, damping, useOpenMP);
+            handleGroundCollision(body, 0.0f, useOpenMP);
         }
     }
 }
 
-void bSolverEngine::clearAndApplyExternalForces(bBodyState& body) {
-    size_t numVertices = body.positions.size() / 3;
+void bSolverEngine::clearAndApplyExternalForces(bBodyState& body, bool useOpenMP) {
+    long long numVertices = static_cast<long long>(body.positions.size() / 3);
     const float gravityY = -9.81f;
 
-    for (size_t i = 0; i < numVertices; ++i) {
+    #pragma omp parallel for if(useOpenMP)
+    for (long long i = 0; i < numVertices; ++i) {
         body.forces[i * 3 + 0] = 0.0f;
         body.forces[i * 3 + 1] = body.masses[i] * gravityY;
         body.forces[i * 3 + 2] = 0.0f;
     }
 }
 
-void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
-    size_t numTets = body.tetrahedrons.size() / 4;
+void bSolverEngine::computeInternalForces(bBodyState& body, float dt, bool useOpenMP) {
+    long long numTets = static_cast<long long>(body.tetrahedrons.size() / 4);
     const bMaterial& mat = body.material;
 
     float E_base = (mat.youngModulus > 0.0f) ? mat.youngModulus : 500000.0f;
@@ -233,17 +238,16 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
     float beta_TQ = (mat.taylorQuinney > 0.0f) ? mat.taylorQuinney : 0.9f;
     float eps_dot_0 = (mat.eps_dot_0 > 0.0f) ? mat.eps_dot_0 : 1.0f;
 
-    int edges[6][2] = { {0,1}, {0,2}, {0,3}, {1,2}, {1,3}, {2,3} };
+    const int edges[6][2] = { {0,1}, {0,2}, {0,3}, {1,2}, {1,3}, {2,3} };
 
-    for (size_t t = 0; t < numTets; ++t) {
+    #pragma omp parallel for if(useOpenMP)
+    for (long long t = 0; t < numTets; ++t) {
         if (body.isEroded[t]) continue;
 
         float V0 = body.restVolumes[t];
         if (V0 <= 1e-12f) continue;
 
-        // wk³ad masowy tego czworoœcianu do ka¿dego z jego 4 wierzcho³ków
         float tetNodeMass = 0.25f * rho0 * V0;
-        // maksymalna stabilna sztywnoœæ dla tego czworoœcianu (warunek CFL Eulera)
         float maxStableK = (dt > 1e-7f) ? (0.12f * tetNodeMass / (dt * dt)) : 1e30f;
 
         float T = body.temperatures[t];
@@ -252,15 +256,17 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
         float thermalFactor = 1.0f - std::pow(T_star, m_exp);
         float E_eff = E_base * thermalFactor;
 
-        int i0 = body.tetrahedrons[t * 4 + 0];
-        int i1 = body.tetrahedrons[t * 4 + 1];
-        int i2 = body.tetrahedrons[t * 4 + 2];
-        int i3 = body.tetrahedrons[t * 4 + 3];
+        int tetVerts[4] = {
+            body.tetrahedrons[t * 4 + 0],
+            body.tetrahedrons[t * 4 + 1],
+            body.tetrahedrons[t * 4 + 2],
+            body.tetrahedrons[t * 4 + 3]
+        };
 
-        const float* p0 = &body.positions[i0 * 3];
-        const float* p1 = &body.positions[i1 * 3];
-        const float* p2 = &body.positions[i2 * 3];
-        const float* p3 = &body.positions[i3 * 3];
+        const float* p0 = &body.positions[tetVerts[0] * 3];
+        const float* p1 = &body.positions[tetVerts[1] * 3];
+        const float* p2 = &body.positions[tetVerts[2] * 3];
+        const float* p3 = &body.positions[tetVerts[3] * 3];
 
         float e1[3] = { p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2] };
         float e2[3] = { p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2] };
@@ -300,25 +306,28 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
             pressure = -K_eff * volStrain;
         }
 
-        for (int d = 0; d < 3; ++d) {
-            body.forces[i0 * 3 + d] += pressure * gradV0[d];
-            body.forces[i1 * 3 + d] += pressure * gradV1[d];
-            body.forces[i2 * 3 + d] += pressure * gradV2[d];
-            body.forces[i3 * 3 + d] += pressure * gradV3[d];
-        }
+        // Lokalna akumulacja si³ dla 4 wierzcho³ków czworoœcianu (ogranicza liczbê operacji atomic 4-krotnie)
+        float localF[4][3] = {
+            { pressure * gradV0[0], pressure * gradV0[1], pressure * gradV0[2] },
+            { pressure * gradV1[0], pressure * gradV1[1], pressure * gradV1[2] },
+            { pressure * gradV2[0], pressure * gradV2[1], pressure * gradV2[2] },
+            { pressure * gradV3[0], pressure * gradV3[1], pressure * gradV3[2] }
+        };
 
         float maxTetPlasticInc = 0.0f;
         float maxEdgeStrainRate = 0.0f;
         float maxTrialStress = 0.0f;
 
         for (int e = 0; e < 6; ++e) {
-            int iA = body.tetrahedrons[t * 4 + edges[e][0]];
-            int iB = body.tetrahedrons[t * 4 + edges[e][1]];
+            int localA = edges[e][0];
+            int localB = edges[e][1];
+            int iA = tetVerts[localA];
+            int iB = tetVerts[localB];
 
-            float* pA = &body.positions[iA * 3];
-            float* pB = &body.positions[iB * 3];
-            float* vA = &body.velocities[iA * 3];
-            float* vB = &body.velocities[iB * 3];
+            const float* pA = &body.positions[iA * 3];
+            const float* pB = &body.positions[iB * 3];
+            const float* vA = &body.velocities[iA * 3];
+            const float* vB = &body.velocities[iB * 3];
 
             float dx = pB[0] - pA[0];
             float dy = pB[1] - pA[1];
@@ -378,13 +387,24 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
             float springForce = k_edge * deltaL;
             float totalForce = springForce + relVel * c_edge;
 
-            body.forces[iA * 3 + 0] += totalForce * nx;
-            body.forces[iA * 3 + 1] += totalForce * ny;
-            body.forces[iA * 3 + 2] += totalForce * nz;
+            localF[localA][0] += totalForce * nx;
+            localF[localA][1] += totalForce * ny;
+            localF[localA][2] += totalForce * nz;
 
-            body.forces[iB * 3 + 0] -= totalForce * nx;
-            body.forces[iB * 3 + 1] -= totalForce * ny;
-            body.forces[iB * 3 + 2] -= totalForce * nz;
+            localF[localB][0] -= totalForce * nx;
+            localF[localB][1] -= totalForce * ny;
+            localF[localB][2] -= totalForce * nz;
+        }
+
+        // Bezpieczny wielow¹tkowo zapis zagregowanych si³ do pamiêci globalnej
+        for (int v = 0; v < 4; ++v) {
+            int globalIdx = tetVerts[v] * 3;
+            #pragma omp atomic
+            body.forces[globalIdx + 0] += localF[v][0];
+            #pragma omp atomic
+            body.forces[globalIdx + 1] += localF[v][1];
+            #pragma omp atomic
+            body.forces[globalIdx + 2] += localF[v][2];
         }
 
         if (maxTetPlasticInc > 0.0f) {
@@ -406,7 +426,7 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt) {
     }
 }
 
-void bSolverEngine::handleBodyCollisions(float dt) {
+void bSolverEngine::handleBodyCollisions(float dt, bool useOpenMP) {
     if (bodies.size() < 2) return;
 
     for (size_t a = 0; a < bodies.size(); ++a) {
@@ -414,21 +434,26 @@ void bSolverEngine::handleBodyCollisions(float dt) {
             bBodyState& bodyA = bodies[a];
             bBodyState& bodyB = bodies[b];
 
-            size_t numVA = bodyA.positions.size() / 3;
-            size_t numVB = bodyB.positions.size() / 3;
+            long long numVA = static_cast<long long>(bodyA.positions.size() / 3);
+            long long numVB = static_cast<long long>(bodyB.positions.size() / 3);
 
             float EA = (bodyA.material.youngModulus > 0.0f) ? bodyA.material.youngModulus : 500000.0f;
             float EB = (bodyB.material.youngModulus > 0.0f) ? bodyB.material.youngModulus : 500000.0f;
             float E_eff = 0.5f * (EA + EB);
 
-            for (size_t i = 0; i < numVA; ++i) {
+            #pragma omp parallel for if(useOpenMP)
+            for (long long i = 0; i < numVA; ++i) {
                 if (!bodyA.isVertexActive[i]) continue;
 
                 const float* pA = &bodyA.positions[i * 3];
                 const float* vA = &bodyA.velocities[i * 3];
                 float rA = bodyA.contactRadii[i];
 
-                for (size_t j = 0; j < numVB; ++j) {
+                float sumForceAx = 0.0f;
+                float sumForceAy = 0.0f;
+                float sumForceAz = 0.0f;
+
+                for (long long j = 0; j < numVB; ++j) {
                     if (!bodyB.isVertexActive[j]) continue;
 
                     const float* pB = &bodyB.positions[j * 3];
@@ -468,34 +493,46 @@ void bSolverEngine::handleBodyCollisions(float dt) {
                             forceMag -= 0.25f * relVel * std::sqrt(k_contact * minMass);
                         }
 
-                        bodyA.forces[i * 3 + 0] -= forceMag * nx;
-                        bodyA.forces[i * 3 + 1] -= forceMag * ny;
-                        bodyA.forces[i * 3 + 2] -= forceMag * nz;
+                        float fx = forceMag * nx;
+                        float fy = forceMag * ny;
+                        float fz = forceMag * nz;
 
-                        bodyB.forces[j * 3 + 0] += forceMag * nx;
-                        bodyB.forces[j * 3 + 1] += forceMag * ny;
-                        bodyB.forces[j * 3 + 2] += forceMag * nz;
+                        sumForceAx -= fx;
+                        sumForceAy -= fy;
+                        sumForceAz -= fz;
+
+                        #pragma omp atomic
+                        bodyB.forces[j * 3 + 0] += fx;
+                        #pragma omp atomic
+                        bodyB.forces[j * 3 + 1] += fy;
+                        #pragma omp atomic
+                        bodyB.forces[j * 3 + 2] += fz;
                     }
                 }
+
+                bodyA.forces[i * 3 + 0] += sumForceAx;
+                bodyA.forces[i * 3 + 1] += sumForceAy;
+                bodyA.forces[i * 3 + 2] += sumForceAz;
             }
         }
     }
 }
 
-void bSolverEngine::evaluateErosion(bBodyState& body) {
+void bSolverEngine::evaluateErosion(bBodyState& body, bool useOpenMP) {
     if (body.material.D1 <= 0.0f) return;
 
-    size_t numTets = body.tetrahedrons.size() / 4;
-    int edges[6][2] = { {0,1}, {0,2}, {0,3}, {1,2}, {1,3}, {2,3} };
-    bool anyNewErosion = false;
+    long long numTets = static_cast<long long>(body.tetrahedrons.size() / 4);
+    const int edges[6][2] = { {0,1}, {0,2}, {0,3}, {1,2}, {1,3}, {2,3} };
+    int anyNewErosion = 0;
 
-    for (size_t t = 0; t < numTets; ++t) {
+#pragma omp parallel for if(useOpenMP) reduction(|:anyNewErosion)
+    for (long long t = 0; t < numTets; ++t) {
         if (body.isEroded[t]) continue;
 
         if (body.damageAccum[t] >= 1.0f ||
             (body.material.T_melt > 0.0f && body.temperatures[t] >= body.material.T_melt)) {
-            body.isEroded[t] = true;
-            anyNewErosion = true;
+            body.isEroded[t] = 1;
+            anyNewErosion = 1;
             continue;
         }
 
@@ -508,8 +545,8 @@ void bSolverEngine::evaluateErosion(bBodyState& body) {
             &body.positions[i2 * 3],
             &body.positions[i3 * 3]);
         if (currentV < 0.2f * body.restVolumes[t]) {
-            body.isEroded[t] = true;
-            anyNewErosion = true;
+            body.isEroded[t] = 1;
+            anyNewErosion = 1;
             continue;
         }
 
@@ -529,31 +566,33 @@ void bSolverEngine::evaluateErosion(bBodyState& body) {
             float strain = std::abs(currentLength - restLength) / restLength;
 
             if (strain > body.material.D1) {
-                body.isEroded[t] = true;
-                anyNewErosion = true;
+                body.isEroded[t] = 1;
+                anyNewErosion = 1;
                 break;
             }
         }
     }
 
-    if (anyNewErosion) {
-        std::fill(body.isVertexActive.begin(), body.isVertexActive.end(), false);
-        for (size_t t = 0; t < numTets; ++t) {
+    if (anyNewErosion != 0) {
+        std::fill(body.isVertexActive.begin(), body.isVertexActive.end(), 0);
+        #pragma omp parallel for if(useOpenMP)
+        for (long long t = 0; t < numTets; ++t) {
             if (!body.isEroded[t]) {
-                body.isVertexActive[body.tetrahedrons[t * 4 + 0]] = true;
-                body.isVertexActive[body.tetrahedrons[t * 4 + 1]] = true;
-                body.isVertexActive[body.tetrahedrons[t * 4 + 2]] = true;
-                body.isVertexActive[body.tetrahedrons[t * 4 + 3]] = true;
+                body.isVertexActive[body.tetrahedrons[t * 4 + 0]] = 1;
+                body.isVertexActive[body.tetrahedrons[t * 4 + 1]] = 1;
+                body.isVertexActive[body.tetrahedrons[t * 4 + 2]] = 1;
+                body.isVertexActive[body.tetrahedrons[t * 4 + 3]] = 1;
             }
         }
     }
 }
 
-void bSolverEngine::integrate(bBodyState& body, float dt, float damping) {
-    size_t numVertices = body.positions.size() / 3;
+void bSolverEngine::integrate(bBodyState& body, float dt, float damping, bool useOpenMP) {
+    long long numVertices = static_cast<long long>(body.positions.size() / 3);
     const float maxVel = 200.0f;
 
-    for (size_t i = 0; i < numVertices; ++i) {
+    #pragma omp parallel for if(useOpenMP)
+    for (long long i = 0; i < numVertices; ++i) {
         if (!body.isVertexActive[i]) continue;
         float mass = body.masses[i];
         if (mass <= 1e-8f) continue;
@@ -574,9 +613,11 @@ void bSolverEngine::integrate(bBodyState& body, float dt, float damping) {
     }
 }
 
-void bSolverEngine::handleGroundCollision(bBodyState& body, float groundY) {
-    size_t numVertices = body.positions.size() / 3;
-    for (size_t i = 0; i < numVertices; ++i) {
+void bSolverEngine::handleGroundCollision(bBodyState& body, float groundY, bool useOpenMP) {
+    long long numVertices = static_cast<long long>(body.positions.size() / 3);
+
+    #pragma omp parallel for if(useOpenMP)
+    for (long long i = 0; i < numVertices; ++i) {
         if (body.positions[i * 3 + 1] < groundY) {
             body.positions[i * 3 + 1] = groundY;
             if (body.velocities[i * 3 + 1] < 0.0f) {
