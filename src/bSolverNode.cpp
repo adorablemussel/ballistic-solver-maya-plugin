@@ -9,6 +9,7 @@
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnNumericAttribute.h>
+#include <maya/MFnEnumAttribute.h>
 #include <maya/MArrayDataHandle.h>
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MFnPluginData.h>
@@ -29,7 +30,8 @@ static const MString TYPE_NAME = MString("bSolverNode");
 ////////////////////
 MObject bSolverNode::inBodyObj;
 MObject bSolverNode::inTimeObj;
-MObject bSolverNode::substepsObj; 
+MObject bSolverNode::substepsObj;
+MObject bSolverNode::computeBackendObj;
 
 MObject bSolverNode::outTetMeshObj;
 MObject bSolverNode::outMeshObj;
@@ -51,9 +53,13 @@ MStatus bSolverNode::compute(const MPlug& plug, MDataBlock& data) {
     }
 
     MStatus status;
-    MTime currentTime = data.inputValue(inTimeObj, &status).asTime();
+
     int substeps = data.inputValue(substepsObj, &status).asInt();
 
+    short backendVal = data.inputValue(computeBackendObj, &status).asShort();
+    bComputeBackend backend = static_cast<bComputeBackend>(backendVal);
+
+    MTime currentTime = data.inputValue(inTimeObj, &status).asTime();
     int currentFrame = static_cast<int>(std::round(currentTime.as(MTime::uiUnit())));
 
     // inicjalizacja na klatce <= 1 (lub po zmianie parametrów wejœciowych)
@@ -217,6 +223,15 @@ MStatus bSolverNode::Initialize() {
     numAttr.setStorable(true);
     numAttr.setKeyable(true);
 
+    MFnEnumAttribute enumAttr;
+    computeBackendObj = enumAttr.create("computeBackend", "cbck", 0);
+    enumAttr.addField("CPU (Single-Thread)", 0);
+    enumAttr.addField("CPU (OpenMP)", 1);
+    enumAttr.addField("GPU (CUDA)", 2);
+    enumAttr.setStorable(true);
+    enumAttr.setKeyable(false);
+    enumAttr.setChannelBox(true);
+
 	outTetMeshObj = typedAttr.create("outTetMesh", "otm", bMeshData::GetTypeId());
 	typedAttr.setStorable(false);
 	typedAttr.setWritable(false);
@@ -232,6 +247,7 @@ MStatus bSolverNode::Initialize() {
 	addAttribute(inBodyObj);
 	addAttribute(inTimeObj);
     addAttribute(substepsObj);
+    addAttribute(computeBackendObj);
 	addAttribute(outTetMeshObj);
 	addAttribute(outMeshObj);
 
@@ -239,6 +255,8 @@ MStatus bSolverNode::Initialize() {
 	attributeAffects(inBodyObj, outMeshObj);
 	attributeAffects(inTimeObj, outTetMeshObj);
 	attributeAffects(inTimeObj, outMeshObj);
+    attributeAffects(computeBackendObj, outTetMeshObj);
+    attributeAffects(computeBackendObj, outMeshObj);
     attributeAffects(substepsObj, outTetMeshObj);
     attributeAffects(substepsObj, outMeshObj);
 

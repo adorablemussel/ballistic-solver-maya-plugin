@@ -6,6 +6,11 @@
 #include "bMaterial.h"
 #include "bBodyState.h"
 
+enum class bComputeBackend : short {
+    CPU_Single = 0,
+    CPU_OpenMP = 1,
+    GPU_CUDA = 2
+};
 
 class bSolverEngine {
 public:
@@ -20,7 +25,7 @@ public:
 
     void pinVertices(size_t bodyIndex, const std::vector<int>& vertexIndices);
     
-    void step(float frameDt, int substeps, float damping = 0.999f);
+    void step(float frameDt, int substeps, bComputeBackend backend = bComputeBackend::CPU_Single, float damping = 0.999f);
 
     void extractSurfaceTriangles(size_t bodyIndex, std::vector<int>& outTriangleIndices) const;
     

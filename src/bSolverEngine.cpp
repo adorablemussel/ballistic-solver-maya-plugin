@@ -187,7 +187,7 @@ void bSolverEngine::precomputeRestState(bBodyState& body) {
     }
 }
 
-void bSolverEngine::step(float frameDt, int substeps, float damping) {
+void bSolverEngine::step(float frameDt, int substeps, bComputeBackend backend, float damping) {
     if (substeps <= 0) substeps = 1;
     float dt = frameDt / static_cast<float>(substeps);
 

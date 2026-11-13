@@ -23,6 +23,7 @@ private:
 	static MObject inBodyObj;
 	static MObject inTimeObj;
 	static MObject substepsObj;
+	static MObject computeBackendObj;
 
 	static MObject outTetMeshObj;
 	static MObject outMeshObj;
