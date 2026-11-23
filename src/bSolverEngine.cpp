@@ -4,7 +4,12 @@
 #include <algorithm>
 #include <omp.h>
 
+bSolverEngine::~bSolverEngine() {
+    bFreeCudaBuffers(gpuBodies);
+}
+
 void bSolverEngine::clearBodies() {
+    bFreeCudaBuffers(gpuBodies);
     bodies.clear();
 }
 
@@ -112,6 +117,7 @@ void bSolverEngine::pinVertices(size_t bodyIndex, const std::vector<int>& vertex
             body.velocities[idx * 3 + 2] = 0.0f;
         }
     }
+    bFreeCudaBuffers(gpuBodies);
 }
 
 float bSolverEngine::computeSignedTetVolume(const float* p0, const float* p1, const float* p2, const float* p3) const {
@@ -190,9 +196,17 @@ void bSolverEngine::precomputeRestState(bBodyState& body) {
 
 void bSolverEngine::step(float frameDt, int substeps, bComputeBackend backend, float damping) {
     if (substeps <= 0) substeps = 1;
-    float dt = frameDt / static_cast<float>(substeps);
 
-    // W kolejnym kroku podepniemy tutaj wywo³anie stepCUDA() dla bComputeBackend::GPU_CUDA
+    float substepDamping = std::pow(damping, 40.0f / static_cast<float>(substeps));
+
+    // opcja 2: Obliczenia na GPU (CUDA)
+    if (backend == bComputeBackend::GPU_CUDA) {
+        bStepCUDA(bodies, gpuBodies, frameDt, substeps, damping);
+        return;
+    }
+
+    // opcje 0 i 1: Obliczenia na CPU (Single-Thread lub OpenMP)
+    float dt = frameDt / static_cast<float>(substeps);
     bool useOpenMP = (backend == bComputeBackend::CPU_OpenMP);
 
     for (int s = 0; s < substeps; ++s) {
@@ -205,7 +219,7 @@ void bSolverEngine::step(float frameDt, int substeps, bComputeBackend backend, f
 
         for (auto& body : bodies) {
             evaluateErosion(body, useOpenMP);
-            integrate(body, dt, damping, useOpenMP);
+            integrate(body, dt, substepDamping, useOpenMP);
             handleGroundCollision(body, 0.0f, useOpenMP);
         }
     }

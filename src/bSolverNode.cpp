@@ -31,6 +31,7 @@ static const MString TYPE_NAME = MString("bSolverNode");
 MObject bSolverNode::inBodyObj;
 MObject bSolverNode::inTimeObj;
 MObject bSolverNode::substepsObj;
+MObject bSolverNode::dampingObj;
 MObject bSolverNode::computeBackendObj;
 
 MObject bSolverNode::outTetMeshObj;
@@ -55,6 +56,8 @@ MStatus bSolverNode::compute(const MPlug& plug, MDataBlock& data) {
     MStatus status;
 
     int substeps = data.inputValue(substepsObj, &status).asInt();
+
+    float dampingVal = data.inputValue(dampingObj, &status).asFloat();
 
     short backendVal = data.inputValue(computeBackendObj, &status).asShort();
     bComputeBackend backend = static_cast<bComputeBackend>(backendVal);
@@ -93,7 +96,7 @@ MStatus bSolverNode::compute(const MPlug& plug, MDataBlock& data) {
 
         int framesToStep = std::min(currentFrame - lastSimulatedFrame, 5);
         for (int f = 0; f < framesToStep; ++f) {
-            solver.step(frameDt, substeps, backend);
+            solver.step(frameDt, substeps, backend, dampingVal);
         }
         lastSimulatedFrame = currentFrame;
     }
@@ -223,6 +226,12 @@ MStatus bSolverNode::Initialize() {
     numAttr.setStorable(true);
     numAttr.setKeyable(true);
 
+    dampingObj = numAttr.create("damping", "dmp", MFnNumericData::kFloat, 0.999f);
+    numAttr.setMin(0.0f);
+    numAttr.setMax(1.0f);
+    numAttr.setStorable(true);
+    numAttr.setKeyable(true);
+
     MFnEnumAttribute enumAttr;
     computeBackendObj = enumAttr.create("computeBackend", "cbck", 0);
     enumAttr.addField("CPU (Single-Thread)", 0);
@@ -247,6 +256,7 @@ MStatus bSolverNode::Initialize() {
 	addAttribute(inBodyObj);
 	addAttribute(inTimeObj);
     addAttribute(substepsObj);
+    addAttribute(dampingObj);
     addAttribute(computeBackendObj);
 	addAttribute(outTetMeshObj);
 	addAttribute(outMeshObj);
@@ -259,6 +269,8 @@ MStatus bSolverNode::Initialize() {
     attributeAffects(computeBackendObj, outMeshObj);
     attributeAffects(substepsObj, outTetMeshObj);
     attributeAffects(substepsObj, outMeshObj);
+    attributeAffects(dampingObj, outTetMeshObj);
+    attributeAffects(dampingObj, outMeshObj);
 
 
 	return (MS::kSuccess);

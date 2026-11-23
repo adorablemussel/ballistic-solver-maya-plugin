@@ -9,7 +9,9 @@ set(CMAKE_CUDA_ARCHITECTURES 86)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_RUNTIME_LIBRARY Static)
 
 ###########
 # ŚCIEŻKI #
@@ -51,7 +53,8 @@ set(HEADER_FILES
     "include/bBodyNode.h" 
     "include/bSolverNode.h" 
     "include/bSolverEngine.h" 
-    "include/bBodyState.h")
+    "include/bBodyState.h"
+    "include/bSolverCUDA.h")
 
 set(SOURCE_FILES
     "src/main.cpp"
@@ -65,7 +68,8 @@ set(SOURCE_FILES
     "src/bMeshVisualizationDrawOverride.cpp" 
     "src/bBodyNode.cpp" 
     "src/bSolverNode.cpp" 
-    "src/bSolverEngine.cpp")
+    "src/bSolverEngine.cpp"
+    "src/bSolverCUDA.cu")
 
 ###############
 # BUILDOWANIE #

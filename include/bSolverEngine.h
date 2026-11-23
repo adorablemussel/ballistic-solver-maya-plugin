@@ -4,6 +4,7 @@
 #include <array>
 #include "bMaterial.h"
 #include "bBodyState.h"
+#include "bSolverCUDA.h"
 
 enum class bComputeBackend : short {
     CPU_Single = 0,
@@ -14,7 +15,7 @@ enum class bComputeBackend : short {
 class bSolverEngine {
 public:
     bSolverEngine() = default;
-    ~bSolverEngine() = default;
+    ~bSolverEngine();
 
     void clearBodies();
     void addBody(const bMaterial& mat,
@@ -32,6 +33,7 @@ public:
 
 private:
     std::vector<bBodyState> bodies;
+    std::vector<bCudaBodyBuffer> gpuBodies;
 
     void precomputeRestState(bBodyState& body);
     float computeSignedTetVolume(const float* p0, const float* p1, const float* p2, const float* p3) const;
