@@ -6,13 +6,20 @@ The correctness of the solver's implementation will be verified against selected
 
 ## Preview in Maya
 <p align="center">
-<img width="700" alt="nodes" src="https://github.com/user-attachments/assets/85d7a2ea-d42d-4559-a4d1-c45455997d1e" />
+<img width="720" alt="nodes" src="https://github.com/user-attachments/assets/85d7a2ea-d42d-4559-a4d1-c45455997d1e" />
 <br>
 custom nodes with custom data types
 </p>
 
 <p align="center">
-<img width="720" height="540" alt="tetrahedrons" src="https://github.com/user-attachments/assets/e08b3750-8141-4329-a336-9454bc1812b1" />
+<img width="720" alt="tetrahedrons" src="https://github.com/user-attachments/assets/e08b3750-8141-4329-a336-9454bc1812b1" />
 <br>
 viewport mesher visualization
 </p>
+
+<p align="center">
+<img width="720" alt="penetration_demo" src="https://github.com/user-attachments/assets/f39fc3e9-5da4-4989-b514-63e4a50f2fc4" />
+<br>
+ballistic penetration demo
+</p>
+
