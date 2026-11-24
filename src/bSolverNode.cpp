@@ -32,6 +32,7 @@ MObject bSolverNode::inBodyObj;
 MObject bSolverNode::inTimeObj;
 MObject bSolverNode::substepsObj;
 MObject bSolverNode::dampingObj;
+MObject bSolverNode::timeScaleObj;
 MObject bSolverNode::computeBackendObj;
 
 MObject bSolverNode::outTetMeshObj;
@@ -56,8 +57,8 @@ MStatus bSolverNode::compute(const MPlug& plug, MDataBlock& data) {
     MStatus status;
 
     int substeps = data.inputValue(substepsObj, &status).asInt();
-
     float dampingVal = data.inputValue(dampingObj, &status).asFloat();
+    float timeScaleVal = data.inputValue(timeScaleObj, &status).asFloat();
 
     short backendVal = data.inputValue(computeBackendObj, &status).asShort();
     bComputeBackend backend = static_cast<bComputeBackend>(backendVal);
@@ -65,8 +66,15 @@ MStatus bSolverNode::compute(const MPlug& plug, MDataBlock& data) {
     MTime currentTime = data.inputValue(inTimeObj, &status).asTime();
     int currentFrame = static_cast<int>(std::round(currentTime.as(MTime::uiUnit())));
 
-    // inicjalizacja na klatce <= 1 (lub po zmianie parametrów wejœciowych)
-    if (!isInitialized || (currentFrame <= 1 && lastSimulatedFrame != 1) || currentFrame < lastSimulatedFrame) {
+    // twardy reset (wtedy, gdy np. suwaki lub wejœciowa siatka ulegn¹ zmianie)
+    if (!isInitialized) {
+        solver.clearBodies();
+        frameCache.clear();
+        lastSimulatedFrame = -1;
+    }
+
+    // inicjalizacja pierwszej klatki, jeœli nie ma jej w cache
+    if (currentFrame == 1 && frameCache.find(1) == frameCache.end()) {
         solver.clearBodies();
 
         MArrayDataHandle inBodyArray = data.inputArrayValue(inBodyObj, &status);
@@ -75,30 +83,33 @@ MStatus bSolverNode::compute(const MPlug& plug, MDataBlock& data) {
         for (unsigned int i = 0; i < bodyCount; ++i) {
             MDataHandle elemHandle = inBodyArray.inputValue(&status);
             bBodyData* bodyData = dynamic_cast<bBodyData*>(elemHandle.asPluginData());
-
             if (bodyData && !bodyData->vertices.empty()) {
-                solver.addBody(bodyData->material,
-                    bodyData->vertices,
-                    bodyData->tetrahedrons,
-                    bodyData->velocity);
+                solver.addBody(bodyData->material, bodyData->vertices, bodyData->tetrahedrons, bodyData->velocity);
                 solver.pinVertices(solver.getBodies().size() - 1, bodyData->pinnedVertices);
             }
             inBodyArray.next();
         }
 
         lastSimulatedFrame = 1;
+        frameCache[1] = solver.getBodies();
         isInitialized = true;
     }
-    // krok symulacji
-    else if (currentFrame > lastSimulatedFrame) {
+    // klatka znajduje siê ju¿ w RAM
+    else if (currentFrame != lastSimulatedFrame && frameCache.find(currentFrame) != frameCache.end()) {
+        solver.setBodies(frameCache[currentFrame]);
+        lastSimulatedFrame = currentFrame;
+    }
+    // klatki nie ma w cache
+    else if (currentFrame > lastSimulatedFrame && lastSimulatedFrame >= 1) {
         MTime oneFrame(1.0, MTime::uiUnit());
-        float frameDt = static_cast<float>(oneFrame.as(MTime::kSeconds));
+        float frameDt = static_cast<float>(oneFrame.as(MTime::kSeconds)) * timeScaleVal;
 
         int framesToStep = std::min(currentFrame - lastSimulatedFrame, 5);
         for (int f = 0; f < framesToStep; ++f) {
-            solver.step(frameDt, substeps, backend, dampingVal);
+            solver.step(frameDt, substeps, backend, dampingVal, timeScaleVal);
+            lastSimulatedFrame++;
+            frameCache[lastSimulatedFrame] = solver.getBodies();
         }
-        lastSimulatedFrame = currentFrame;
     }
 
     const auto& bodies = solver.getBodies();
@@ -232,6 +243,12 @@ MStatus bSolverNode::Initialize() {
     numAttr.setStorable(true);
     numAttr.setKeyable(true);
 
+    timeScaleObj = numAttr.create("timeScale", "tscl", MFnNumericData::kFloat, 1.0f);
+    numAttr.setMin(0.001f);
+    numAttr.setMax(5.0f);
+    numAttr.setStorable(true);
+    numAttr.setKeyable(true);
+
     MFnEnumAttribute enumAttr;
     computeBackendObj = enumAttr.create("computeBackend", "cbck", 0);
     enumAttr.addField("CPU (Single-Thread)", 0);
@@ -257,6 +274,7 @@ MStatus bSolverNode::Initialize() {
 	addAttribute(inTimeObj);
     addAttribute(substepsObj);
     addAttribute(dampingObj);
+    addAttribute(timeScaleObj);
     addAttribute(computeBackendObj);
 	addAttribute(outTetMeshObj);
 	addAttribute(outMeshObj);
@@ -271,6 +289,8 @@ MStatus bSolverNode::Initialize() {
     attributeAffects(substepsObj, outMeshObj);
     attributeAffects(dampingObj, outTetMeshObj);
     attributeAffects(dampingObj, outMeshObj);
+    attributeAffects(timeScaleObj, outTetMeshObj);
+    attributeAffects(timeScaleObj, outMeshObj);
 
 
 	return (MS::kSuccess);

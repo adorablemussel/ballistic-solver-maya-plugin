@@ -46,6 +46,7 @@ namespace {
         int numTets,
         bMaterial mat,
         float dt,
+        float timeScale,
         const int* tetrahedrons,
         const float* restVolumes,
         float* restEdgeLengths,
@@ -77,7 +78,8 @@ namespace {
         float eps_dot_0 = (mat.eps_dot_0 > 0.0f) ? mat.eps_dot_0 : 1.0f;
 
         float tetNodeMass = 0.25f * rho0 * V0;
-        float maxStableK = (dt > 1e-7f) ? (0.12f * tetNodeMass / (dt * dt)) : 1e30f;
+        float baseDt = (timeScale > 0.001f) ? (dt / timeScale) : dt;
+        float maxStableK = (baseDt > 1e-7f) ? (0.12f * tetNodeMass / (baseDt * baseDt)) : 1e30f;
 
         float T = temperatures[t];
         float T_star = d_clamp((T - T_room) / (T_melt - T_room), 0.0f, 0.999f);
@@ -543,13 +545,14 @@ void bStepCUDA(
     std::vector<bCudaBodyBuffer>& gpuBodies,
     float frameDt,
     int substeps,
-    float damping)
+    float damping,
+    float timeScale)
 {
     if (bodies.empty()) return;
     if (substeps <= 0) substeps = 1;
     float dt = frameDt / static_cast<float>(substeps);
 
-    float substepDamping = powf(damping, 40.0f / static_cast<float>(substeps));
+    float substepDamping = powf(damping, (40.0f * timeScale) / static_cast<float>(substeps));
 
     allocateAndSyncStaticBuffers(bodies, gpuBodies);
 
@@ -579,7 +582,7 @@ void bStepCUDA(
             if (numT > 0) {
                 int gridT = (numT + blockSize - 1) / blockSize;
                 kComputeInternalForces << <gridT, blockSize >> > (
-                    numT, bodies[i].material, dt,
+                    numT, bodies[i].material, dt, timeScale,
                     g.d_tetrahedrons, g.d_restVolumes, g.d_restEdgeLengths, g.d_isEroded,
                     g.d_positions, g.d_velocities, g.d_forces,
                     g.d_temperatures, g.d_plasticStrains, g.d_internalEnergies, g.d_damageAccum);

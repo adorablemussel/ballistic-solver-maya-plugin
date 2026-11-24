@@ -25,9 +25,11 @@ public:
 
     void pinVertices(size_t bodyIndex, const std::vector<int>& vertexIndices);
 
-    void step(float frameDt, int substeps, bComputeBackend backend = bComputeBackend::CPU_Single, float damping = 0.999f);
+    void step(float frameDt, int substeps, bComputeBackend backend = bComputeBackend::CPU_Single, float damping = 0.999f, float timeScale = 1.0f);
 
     void extractSurfaceTriangles(size_t bodyIndex, std::vector<int>& outTriangleIndices) const;
+
+    void setBodies(const std::vector<bBodyState>& cachedBodies);
 
     const std::vector<bBodyState>& getBodies() const { return bodies; }
 
@@ -39,7 +41,7 @@ private:
     float computeSignedTetVolume(const float* p0, const float* p1, const float* p2, const float* p3) const;
 
     void clearAndApplyExternalForces(bBodyState& body, bool useOpenMP);
-    void computeInternalForces(bBodyState& body, float dt, bool useOpenMP);
+    void computeInternalForces(bBodyState& body, float dt, bool useOpenMP, float timeScale);
     void handleBodyCollisions(float dt, bool useOpenMP);
     void evaluateErosion(bBodyState& body, bool useOpenMP);
     void integrate(bBodyState& body, float dt, float damping, bool useOpenMP);

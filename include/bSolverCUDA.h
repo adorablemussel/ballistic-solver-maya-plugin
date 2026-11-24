@@ -37,4 +37,5 @@ void bStepCUDA(
     std::vector<bCudaBodyBuffer>& gpuBodies,
     float frameDt,
     int substeps,
-    float damping);
+    float damping,
+    float timeScale);

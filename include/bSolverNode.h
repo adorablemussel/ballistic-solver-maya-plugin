@@ -1,6 +1,7 @@
 #pragma once
 
 #include <maya/MPxNode.h>
+#include <map>
 #include "bSolverEngine.h"
 
 class bSolverNode : public MPxNode {
@@ -23,7 +24,8 @@ private:
 	static MObject inBodyObj;
 	static MObject inTimeObj;
 	static MObject substepsObj;
-	static MObject dampingObj; // opór oœrodka
+	static MObject dampingObj;
+	static MObject timeScaleObj;
 	static MObject computeBackendObj;
 
 	static MObject outTetMeshObj;
@@ -33,4 +35,7 @@ private:
 	bSolverEngine solver;
 	int lastSimulatedFrame = -1;
 	bool isInitialized = false;
+
+	// cache klatek
+	std::map<int, std::vector<bBodyState>> frameCache;
 };

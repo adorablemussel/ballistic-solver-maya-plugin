@@ -58,49 +58,65 @@ void bSolverEngine::extractSurfaceTriangles(size_t bodyIndex, std::vector<int>& 
     const auto& body = bodies[bodyIndex];
     size_t numTets = body.tetrahedrons.size() / 4;
 
-    struct OrientedFace {
-        int v0, v1, v2;
-        int count;
+    struct Face {
+        int v[3];
+        int sorted[3];
+        bool operator<(const Face& o) const {
+            if (sorted[0] != o.sorted[0]) return sorted[0] < o.sorted[0];
+            if (sorted[1] != o.sorted[1]) return sorted[1] < o.sorted[1];
+            return sorted[2] < o.sorted[2];
+        }
+        bool operator==(const Face& o) const {
+            return sorted[0] == o.sorted[0] && sorted[1] == o.sorted[1] && sorted[2] == o.sorted[2];
+        }
     };
 
-    std::map<std::array<int, 3>, OrientedFace> faceMap;
+    std::vector<Face> faces;
+    faces.reserve(numTets * 4);
 
-    const int tetFaces[4][3] = {
-        {0, 2, 1},
-        {0, 1, 3},
-        {0, 3, 2},
-        {1, 2, 3}
-    };
+    const int tetFaces[4][3] = { {0, 2, 1}, {0, 1, 3}, {0, 3, 2}, {1, 2, 3} };
 
     for (size_t t = 0; t < numTets; ++t) {
         if (body.isEroded[t]) continue;
 
         for (int f = 0; f < 4; ++f) {
-            int a = body.tetrahedrons[t * 4 + tetFaces[f][0]];
-            int b = body.tetrahedrons[t * 4 + tetFaces[f][1]];
-            int c = body.tetrahedrons[t * 4 + tetFaces[f][2]];
+            Face face;
+            face.v[0] = body.tetrahedrons[t * 4 + tetFaces[f][0]];
+            face.v[1] = body.tetrahedrons[t * 4 + tetFaces[f][1]];
+            face.v[2] = body.tetrahedrons[t * 4 + tetFaces[f][2]];
 
-            std::array<int, 3> key = { a, b, c };
-            std::sort(key.begin(), key.end());
+            face.sorted[0] = face.v[0];
+            face.sorted[1] = face.v[1];
+            face.sorted[2] = face.v[2];
+            std::sort(face.sorted, face.sorted + 3);
 
-            auto it = faceMap.find(key);
-            if (it == faceMap.end()) {
-                faceMap[key] = { a, b, c, 1 };
-            }
-            else {
-                it->second.count++;
-            }
+            faces.push_back(face);
         }
     }
 
-    outTriangleIndices.reserve(faceMap.size() * 3);
-    for (const auto& pair : faceMap) {
-        if (pair.second.count == 1) {
-            outTriangleIndices.push_back(pair.second.v0);
-            outTriangleIndices.push_back(pair.second.v1);
-            outTriangleIndices.push_back(pair.second.v2);
+    if (faces.empty()) return;
+
+    std::sort(faces.begin(), faces.end());
+
+    outTriangleIndices.reserve(faces.size());
+    for (size_t i = 0; i < faces.size(); ) {
+        size_t j = i + 1;
+        while (j < faces.size() && faces[j] == faces[i]) {
+            j++;
         }
+        if (j - i == 1) { // œciana zewnêtrzna (nie wspó³dzieli krawêdzi z innym czworoœcianem)
+            outTriangleIndices.push_back(faces[i].v[0]);
+            outTriangleIndices.push_back(faces[i].v[1]);
+            outTriangleIndices.push_back(faces[i].v[2]);
+        }
+        i = j;
     }
+}
+
+void bSolverEngine::setBodies(const std::vector<bBodyState>& cachedBodies)
+{
+    bodies = cachedBodies;
+    bFreeCudaBuffers(gpuBodies);
 }
 
 void bSolverEngine::pinVertices(size_t bodyIndex, const std::vector<int>& vertexIndices) {
@@ -194,14 +210,14 @@ void bSolverEngine::precomputeRestState(bBodyState& body) {
     }
 }
 
-void bSolverEngine::step(float frameDt, int substeps, bComputeBackend backend, float damping) {
+void bSolverEngine::step(float frameDt, int substeps, bComputeBackend backend, float damping, float timeScale) {
     if (substeps <= 0) substeps = 1;
 
-    float substepDamping = std::pow(damping, 40.0f / static_cast<float>(substeps));
+    float substepDamping = std::pow(damping, (40.0f * timeScale) / static_cast<float>(substeps));
 
     // opcja 2: Obliczenia na GPU (CUDA)
     if (backend == bComputeBackend::GPU_CUDA) {
-        bStepCUDA(bodies, gpuBodies, frameDt, substeps, damping);
+        bStepCUDA(bodies, gpuBodies, frameDt, substeps, damping, timeScale);
         return;
     }
 
@@ -212,7 +228,7 @@ void bSolverEngine::step(float frameDt, int substeps, bComputeBackend backend, f
     for (int s = 0; s < substeps; ++s) {
         for (auto& body : bodies) {
             clearAndApplyExternalForces(body, useOpenMP);
-            computeInternalForces(body, dt, useOpenMP);
+            computeInternalForces(body, dt, useOpenMP, timeScale);
         }
 
         handleBodyCollisions(dt, useOpenMP);
@@ -237,7 +253,7 @@ void bSolverEngine::clearAndApplyExternalForces(bBodyState& body, bool useOpenMP
     }
 }
 
-void bSolverEngine::computeInternalForces(bBodyState& body, float dt, bool useOpenMP) {
+void bSolverEngine::computeInternalForces(bBodyState& body, float dt, bool useOpenMP, float timeScale) {
     long long numTets = static_cast<long long>(body.tetrahedrons.size() / 4);
     const bMaterial& mat = body.material;
 
@@ -262,7 +278,9 @@ void bSolverEngine::computeInternalForces(bBodyState& body, float dt, bool useOp
         if (V0 <= 1e-12f) continue;
 
         float tetNodeMass = 0.25f * rho0 * V0;
-        float maxStableK = (dt > 1e-7f) ? (0.12f * tetNodeMass / (dt * dt)) : 1e30f;
+
+        float baseDt = (timeScale > 0.001f) ? (dt / timeScale) : dt;
+        float maxStableK = (baseDt > 1e-7f) ? (0.12f * tetNodeMass / (baseDt * baseDt)) : 1e30f;
 
         float T = body.temperatures[t];
         float T_star = std::clamp((T - T_room) / (T_melt - T_room), 0.0f, 0.999f);
