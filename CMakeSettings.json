@@ -1,32 +1,64 @@
 ﻿{
   "configurations": [
     {
-      "name": "x64-Debug",
-      "generator": "Ninja",
-      "configurationType": "Debug",
-      "inheritEnvironments": [ "msvc_x64_x64" ],
-      "buildRoot": "${projectDir}\\out\\build\\${name}",
-      "installRoot": "${projectDir}\\out\\install\\${name}"
-    },
-    {
-      "name": "x64-Release",
+      "name": "x64-Release-OMP",
       "generator": "Ninja",
       "configurationType": "Release",
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${projectDir}\\out\\build\\${name}",
-      "installRoot": "${projectDir}\\out\\install\\${name}"
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "variables": [
+        {
+          "name": "USE_GMSH_OMP",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
     },
     {
-      "name": "x64-RelWithDebInfo",
+      "name": "x64-Release-NoOMP",
       "generator": "Ninja",
-      "configurationType": "RelWithDebInfo",
+      "configurationType": "Release",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "",
-      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "USE_GMSH_OMP",
+          "value": "False",
+          "type": "BOOL"
+        }
+      ]
+    },
+    {
+      "name": "x64-Debug-OMP",
+      "generator": "Ninja",
+      "configurationType": "Debug",
       "inheritEnvironments": [ "msvc_x64_x64" ],
-      "variables": []
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "variables": [
+        {
+          "name": "USE_GMSH_OMP",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
+    },
+    {
+      "name": "x64-Debug-NoOMP",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "variables": [
+        {
+          "name": "USE_GMSH_OMP",
+          "value": "False",
+          "type": "BOOL"
+        }
+      ]
     }
   ]
 }
